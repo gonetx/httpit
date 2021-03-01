@@ -40,7 +40,7 @@ type clientConfig struct {
 }
 
 type fasthttpClient struct {
-	doer    clientDoer
+	doer    *fasthttp.HostClient
 	reqs    []*fasthttp.Request
 	resps   []*fasthttp.Response
 	readers []*bytes.Reader
@@ -83,28 +83,15 @@ func newFasthttpClient(cc clientConfig) (client, error) {
 		c.resps[i] = fasthttp.AcquireResponse()
 	}
 
-	if cc.disableKeepAlives {
-		c.doer = &fasthttp.HostClient{
-			Addr:                          addr,
-			NoDefaultUserAgentHeader:      false,
-			Dial:                          fasthttpDialFunc(cc.throughput, cc.timeout),
-			DialDualStack:                 false,
-			IsTLS:                         isTLS,
-			TLSConfig:                     cc.tlsConfig,
-			MaxConns:                      cc.maxConns,
-			ReadTimeout:                   cc.timeout,
-			DisableHeaderNamesNormalizing: true,
-			DisablePathNormalizing:        true,
-		}
-	} else {
-		c.doer = &fasthttp.PipelineClient{
-			Addr:        addr,
-			MaxConns:    cc.maxConns,
-			Dial:        fasthttpDialFunc(cc.throughput, cc.timeout),
-			IsTLS:       isTLS,
-			TLSConfig:   cc.tlsConfig,
-			ReadTimeout: cc.timeout,
-		}
+	c.doer = &fasthttp.HostClient{
+		Addr:                          addr,
+		Dial:                          fasthttpDialFunc(cc.throughput, cc.timeout),
+		IsTLS:                         isTLS,
+		TLSConfig:                     cc.tlsConfig,
+		MaxConns:                      cc.maxConns,
+		ReadTimeout:                   cc.timeout,
+		DisableHeaderNamesNormalizing: true,
+		DisablePathNormalizing:        true,
 	}
 
 	return c, nil
