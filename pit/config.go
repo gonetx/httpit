@@ -1,4 +1,4 @@
-package internal
+package pit
 
 import (
 	"time"
@@ -11,7 +11,7 @@ type Config struct {
 	Timeout     time.Duration
 
 	Method            string
-	Headers           Headers
+	Headers           []string
 	Host              string
 	Body              string
 	File              string

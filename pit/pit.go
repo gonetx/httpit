@@ -1,4 +1,4 @@
-package internal
+package pit
 
 import (
 	"crypto/tls"
@@ -8,18 +8,24 @@ import (
 	"time"
 )
 
+const (
+	defaultConnections = 128
+	defaultDuration    = time.Second * 10
+	defaultTimeout     = time.Second * 3
+)
+
 type Pit struct {
-	c Config
+	c *Config
 	client
 	errorMap
 	throughput int64
 	// HTTP codes
-	code1xx uint64
-	code2xx uint64
-	code3xx uint64
-	code4xx uint64
-	code5xx uint64
-	others  uint64
+	code1xx    uint64
+	code2xx    uint64
+	code3xx    uint64
+	code4xx    uint64
+	code5xx    uint64
+	codeOthers uint64
 
 	wg       sync.WaitGroup
 	doneChan chan struct{}
@@ -31,22 +37,40 @@ type Pit struct {
 	elapsed time.Duration
 }
 
-func NewPit(c Config) *Pit {
-	return &Pit{
-		c:        c,
+func New(c Config) *Pit {
+	p := &Pit{
+		c:        &c,
 		doneChan: make(chan struct{}),
 	}
+
+	if p.c.Connections <= 0 {
+		p.c.Connections = defaultConnections
+	}
+
+	if p.c.Duration <= 0 {
+		p.c.Duration = defaultDuration
+	}
+
+	if p.c.Timeout <= 0 {
+		p.c.Timeout = defaultTimeout
+	}
+
+	return p
 }
 
 func (p *Pit) Run(url string) (err error) {
-	if err := p.init(url); err != nil {
-		return err
+	if err = p.init(url); err != nil {
+		return
 	}
 
 	return errors.New("error")
 }
 
 func (p *Pit) init(url string) (err error) {
+	if url == "" {
+		return errors.New("missing url")
+	}
+
 	cc := clientConfig{
 		method:            p.c.Method,
 		url:               url,

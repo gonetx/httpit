@@ -1,4 +1,4 @@
-package internal
+package pit
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ type clientDoer interface {
 type clientConfig struct {
 	method            string
 	url               string
-	headers           Headers
+	headers           headers
 	host              string
 	stream            bool
 	body              []byte
@@ -64,7 +64,9 @@ func newFasthttpClient(cc clientConfig) (client, error) {
 		req := fasthttp.AcquireRequest()
 		req.Header.SetMethod(cc.method)
 		req.SetRequestURI(cc.url)
-		cc.headers.WriteToFasthttp(req)
+		if err = cc.headers.writeToFasthttp(req); err != nil {
+			return nil, err
+		}
 		if cc.stream {
 			c.readers[i] = bytes.NewReader(nil)
 		} else {
@@ -189,7 +191,9 @@ func newHttpClient(cc clientConfig) (client, error) {
 		}
 		req := c.reqs[i]
 
-		cc.headers.WriteToHttp(req)
+		if err = cc.headers.writeToHttp(req); err != nil {
+			return nil, err
+		}
 
 		if cc.host != "" {
 			req.Host = cc.host

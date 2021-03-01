@@ -1,4 +1,4 @@
-package internal
+package pit
 
 import (
 	"fmt"
@@ -8,32 +8,40 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-type Headers []string
+type headers []string
 
-func (h Headers) WriteToFasthttp(req *fasthttp.Request) {
-	kvs := h.kvs()
+func (h headers) writeToFasthttp(req *fasthttp.Request) error {
+	kvs, err := h.kvs()
+	if err != nil {
+		return err
+	}
 	for i := 0; i < len(kvs); i += 2 {
 		k, v := kvs[i], kvs[i+1]
 		req.Header.Add(k, v)
 	}
+	return nil
 }
 
-func (h Headers) WriteToHttp(req *http.Request) {
-	kvs := h.kvs()
+func (h headers) writeToHttp(req *http.Request) error {
+	kvs, err := h.kvs()
+	if err != nil {
+		return err
+	}
 	for i := 0; i < len(kvs); i += 2 {
 		k, v := kvs[i], kvs[i+1]
 		req.Header.Add(k, v)
 	}
+	return nil
 }
 
-func (h Headers) kvs() []string {
+func (h headers) kvs() ([]string, error) {
 	list := make([]string, 0, len(h)*2)
 	for _, header := range h {
 		kv := strings.Split(header, ":")
 		if len(kv) != 2 {
-			panic(fmt.Sprintf("failed to parse request header %s", header))
+			return nil, fmt.Errorf("failed to parse request header %s", header)
 		}
 		list = append(list, strings.TrimSpace(kv[0]), strings.TrimSpace(kv[1]))
 	}
-	return list
+	return list, nil
 }
