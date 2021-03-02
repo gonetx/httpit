@@ -3,12 +3,12 @@ package pit
 import (
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"io/ioutil"
-	"math"
-	"strings"
+	"os"
 	"sync"
 	"time"
+
+	"github.com/gonetx/httpit/gui"
 )
 
 const (
@@ -20,35 +20,22 @@ const (
 type Pit struct {
 	c *Config
 	client
-	throughput int64
+	wg sync.WaitGroup
 
-	wg        sync.WaitGroup
-	mut       sync.Mutex
-	start     time.Time
-	elapsed   time.Duration
-	totalReqs int64
-	reqs      int64
-	errs      map[string]int
-	done      bool
-	doneChan  chan struct{}
+	mut      sync.Mutex
+	start    time.Time
+	reqs     int64
+	done     bool
+	doneChan chan struct{}
 
-	// HTTP codes
-	code1xx    uint64
-	code2xx    uint64
-	code3xx    uint64
-	code4xx    uint64
-	code5xx    uint64
-	codeOthers uint64
-
-	latencies []int64
-	rps       []float64
+	r *gui.Result
 }
 
 func New(c Config) *Pit {
 	p := &Pit{
 		c:        &c,
 		doneChan: make(chan struct{}),
-		errs:     make(map[string]int),
+		r:        gui.NewResult(os.Stdout),
 	}
 
 	if p.c.Connections <= 0 {
@@ -80,7 +67,7 @@ func (p *Pit) Run(url string) (err error) {
 	// wait for all workers stop
 	p.wg.Wait()
 
-	p.print()
+	p.r.Print()
 
 	return
 }
@@ -100,7 +87,7 @@ func (p *Pit) init(url string) (err error) {
 		maxConns:          p.c.Connections,
 		timeout:           p.c.Timeout,
 		disableKeepAlives: p.c.DisableKeepAlives,
-		throughput:        &p.throughput,
+		throughput:        p.r.Throughput(),
 	}
 
 	if cc.body, err = getBody(p.c.File, p.c.Body); err != nil {
@@ -145,19 +132,18 @@ func (p *Pit) statistic(code int, latency time.Duration, err error) {
 	}
 
 	if err != nil {
-		p.errs[err.Error()]++
+		p.r.AppendError(err)
 	} else {
 		p.reqs++
-		p.totalReqs++
-		p.handleCode(code)
-		p.latencies = append(p.latencies, latency.Microseconds())
+		p.r.IncreaseReq()
+		p.r.AppendCode(code)
+		p.r.AppendLatency(latency)
 	}
 
 	elapsed := time.Since(p.start)
 	// reached count
-	if p.c.Count > 0 && p.totalReqs == int64(p.c.Count) {
-		p.rps = append(p.rps, float64(p.reqs)/elapsed.Seconds())
-
+	if p.c.Count > 0 && p.r.TotalReqs() == int64(p.c.Count) {
+		p.r.AppendRps(float64(p.reqs) / elapsed.Seconds())
 		p.done = true
 		// notify workers to stop
 		close(p.doneChan)
@@ -166,136 +152,18 @@ func (p *Pit) statistic(code int, latency time.Duration, err error) {
 
 	// one round is over
 	if elapsed >= interval {
-		p.rps = append(p.rps, float64(p.reqs)/elapsed.Seconds())
+		p.r.AppendRps(float64(p.reqs) / elapsed.Seconds())
 
-		p.elapsed += elapsed
+		p.r.AddElapsed(elapsed)
 		p.start = time.Now()
 		p.reqs = 0
 	}
 
-	if p.c.Count <= 0 && p.elapsed >= p.c.Duration {
+	if p.c.Count <= 0 && p.r.Elapsed() >= p.c.Duration {
 		p.done = true
 		// notify workers to stop
 		close(p.doneChan)
 	}
-}
-
-func (p *Pit) handleCode(code int) {
-	switch code / 100 {
-	case 1:
-		p.code1xx++
-	case 2:
-		p.code2xx++
-	case 3:
-		p.code3xx++
-	case 4:
-		p.code4xx++
-	case 5:
-		p.code5xx++
-	default:
-		p.codeOthers++
-	}
-}
-
-const temp = `Total requests: %d
-Elapsed: %.2fs
-Statistics        Avg      Stdev        Max
-  Reqs/sec       %.2f     %.2f     %.2f
-  Latency      %.2fms   %.2fms     %.2fms
-  HTTP codes:
-    1xx - %d, 2xx - %d, 3xx - %d, 4xx - %d, 5xx - %d
-    others - %d
-  Throughput: %s
-`
-
-func (p *Pit) print() {
-	rpsAvg, rpsStdev, rpsMax := rpsResult(p.rps)
-	latencyAvg, latencyStdev, latencyMax := latencyResult(p.latencies)
-
-	output := fmt.Sprintf(temp, p.totalReqs, p.elapsed.Seconds(),
-		rpsAvg, rpsStdev, rpsMax,
-		latencyAvg, latencyStdev, latencyMax,
-		p.code1xx, p.code2xx, p.code3xx, p.code4xx, p.code5xx,
-		p.codeOthers,
-		formatThroughput(float64(p.throughput)/p.elapsed.Seconds()),
-	)
-
-	if len(p.errs) > 0 {
-		output += errorResult(p.errs)
-	}
-
-	fmt.Print(output)
-}
-
-func rpsResult(rps []float64) (avg float64, stdev float64, max float64) {
-	var sum, sum2 float64
-	for _, r := range rps {
-		sum += r
-		if r > max {
-			max = r
-		}
-	}
-
-	avg = sum / float64(len(rps))
-
-	var diff float64
-	for _, r := range rps {
-		diff = avg - r
-		sum2 += diff * diff
-	}
-
-	stdev = math.Sqrt(sum2 / float64(len(rps)-1))
-
-	return
-}
-
-func latencyResult(latencies []int64) (avg float64, stdev float64, max float64) {
-	var sum float64
-	for _, latency := range latencies {
-		// us -> ms
-		r := float64(latency) / 1000
-		sum += r
-		if r > max {
-			max = r
-		}
-	}
-
-	avg = sum / float64(len(latencies))
-
-	var diff, sum2 float64
-	for _, latency := range latencies {
-		// us -> ms
-		r := float64(latency) / 1000
-		diff = avg - r
-		sum2 += diff * diff
-	}
-
-	stdev = math.Sqrt(sum2 / float64(len(latencies)-1))
-
-	return
-}
-
-func formatThroughput(throughput float64) string {
-	switch {
-	case throughput < 1e3:
-		return fmt.Sprintf("%.2f B/s", throughput)
-	case throughput < 1e6:
-		return fmt.Sprintf("%.2f KB/s", throughput/1e3)
-	case throughput < 1e9:
-		return fmt.Sprintf("%.2f MB/s", throughput/1e6)
-	default:
-		return fmt.Sprintf("%.2f GB/s", throughput/1e12)
-	}
-}
-
-func errorResult(errs map[string]int) string {
-	var sb strings.Builder
-	sb.WriteString("  Errors\n")
-	for err, count := range errs {
-		sb.WriteString(fmt.Sprintf("    %s: %d\n", err, count))
-	}
-
-	return sb.String()
 }
 
 func getBody(filename, body string) ([]byte, error) {
