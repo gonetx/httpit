@@ -4,11 +4,11 @@ import (
 	"crypto/tls"
 	"errors"
 	"io/ioutil"
-	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/gonetx/httpit/gui"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 const (
@@ -22,20 +22,18 @@ type Pit struct {
 	client
 	wg sync.WaitGroup
 
-	mut      sync.Mutex
-	start    time.Time
-	reqs     int64
-	done     bool
-	doneChan chan struct{}
-
-	r *gui.Result
+	mut       sync.Mutex
+	startTime time.Time
+	roundReqs int64
+	done      bool
+	doneChan  chan struct{}
+	*tui
 }
 
 func New(c Config) *Pit {
 	p := &Pit{
 		c:        &c,
 		doneChan: make(chan struct{}),
-		r:        gui.NewResult(os.Stdout),
 	}
 
 	if p.c.Connections <= 0 {
@@ -50,6 +48,12 @@ func New(c Config) *Pit {
 		p.c.Timeout = defaultTimeout
 	}
 
+	p.tui = newTui()
+	p.count = p.c.Count
+	p.duration = p.c.Duration
+	p.connections = p.c.Connections
+	p.initCmd = p.run
+
 	return p
 }
 
@@ -58,18 +62,7 @@ func (p *Pit) Run(url string) (err error) {
 		return
 	}
 
-	p.start = time.Now()
-	n := p.c.Connections
-	p.wg.Add(n)
-	for i := 0; i < n; i++ {
-		go p.worker(i)
-	}
-	// wait for all workers stop
-	p.wg.Wait()
-
-	p.r.Print()
-
-	return
+	return p.tui.start(url)
 }
 
 func (p *Pit) init(url string) (err error) {
@@ -86,7 +79,7 @@ func (p *Pit) init(url string) (err error) {
 		maxConns:          p.c.Connections,
 		timeout:           p.c.Timeout,
 		disableKeepAlives: p.c.DisableKeepAlives,
-		throughput:        p.r.Throughput(),
+		throughput:        &p.throughput,
 	}
 
 	if cc.body, err = getBody(p.c.File, p.c.Body); err != nil {
@@ -100,6 +93,19 @@ func (p *Pit) init(url string) (err error) {
 	p.client, err = newFasthttpClient(cc)
 
 	return
+}
+
+func (p *Pit) run() tea.Msg {
+	p.startTime = time.Now()
+	n := p.c.Connections
+	p.wg.Add(n)
+	for i := 0; i < n; i++ {
+		go p.worker(i)
+	}
+	// wait for all workers stop
+	p.wg.Wait()
+
+	return done
 }
 
 func (p *Pit) worker(i int) {
@@ -124,18 +130,18 @@ func (p *Pit) statistic(code int, latency time.Duration, err error) {
 	}
 
 	if err != nil {
-		p.r.AppendError(err)
+		p.appendError(err)
 	} else {
-		p.reqs++
-		p.r.IncreaseReq()
-		p.r.AppendCode(code)
-		p.r.AppendLatency(latency)
+		p.roundReqs++
+		atomic.AddInt64(&p.reqs, 1)
+		p.appendCode(code)
+		p.appendLatency(latency)
 	}
 
-	elapsed := time.Since(p.start)
+	elapsed := time.Since(p.startTime)
 	// reached count
-	if p.c.Count > 0 && p.r.TotalReqs() == int64(p.c.Count) {
-		p.r.AppendRps(float64(p.reqs) / elapsed.Seconds())
+	if p.c.Count > 0 && atomic.LoadInt64(&p.reqs) == int64(p.c.Count) {
+		p.appendRps(float64(p.roundReqs) / elapsed.Seconds())
 		p.done = true
 		// notify workers to stop
 		close(p.doneChan)
@@ -144,14 +150,15 @@ func (p *Pit) statistic(code int, latency time.Duration, err error) {
 
 	// one round is over
 	if elapsed >= interval {
-		p.r.AppendRps(float64(p.reqs) / elapsed.Seconds())
+		p.appendRps(float64(p.roundReqs) / elapsed.Seconds())
 
-		p.r.AddElapsed(elapsed)
-		p.start = time.Now()
-		p.reqs = 0
+		atomic.AddInt64(&p.elapsed, int64(elapsed))
+
+		p.startTime = time.Now()
+		p.roundReqs = 0
 	}
 
-	if p.c.Count <= 0 && p.r.Elapsed() >= p.c.Duration {
+	if p.c.Count <= 0 && atomic.LoadInt64(&p.elapsed) >= int64(p.c.Duration) {
 		p.done = true
 		// notify workers to stop
 		close(p.doneChan)
