@@ -1,7 +1,6 @@
 package pit
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -50,13 +49,4 @@ func Test_Header_WriteToFasthttp(t *testing.T) {
 	assert.Nil(t, h.writeToFasthttp(&req))
 	want := "GET / HTTP/1.1\r\nFoo: bar\r\nFoo: bar\r\nBar: baz\r\n\r\n"
 	assert.Equal(t, want, string(req.Header.Header()))
-}
-
-func Test_Header_WriteToHttp(t *testing.T) {
-	var req http.Request
-	req.Header = make(http.Header)
-	var h headers = []string{"foo:bar", "foo:bar", "bar:baz"}
-	assert.Nil(t, h.writeToHttp(&req))
-	assert.Equal(t, []string{"bar", "bar"}, req.Header.Values("foo"))
-	assert.Equal(t, []string{"baz"}, req.Header.Values("bar"))
 }

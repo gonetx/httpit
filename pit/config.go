@@ -20,6 +20,4 @@ type Config struct {
 	Stream            bool
 	DisableKeepAlives bool
 	Insecure          bool
-	Http1             bool
-	Http2             bool
 }

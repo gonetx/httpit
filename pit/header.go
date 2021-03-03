@@ -2,7 +2,6 @@ package pit
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/valyala/fasthttp"
@@ -11,18 +10,6 @@ import (
 type headers []string
 
 func (h headers) writeToFasthttp(req *fasthttp.Request) error {
-	kvs, err := h.kvs()
-	if err != nil {
-		return err
-	}
-	for i := 0; i < len(kvs); i += 2 {
-		k, v := kvs[i], kvs[i+1]
-		req.Header.Add(k, v)
-	}
-	return nil
-}
-
-func (h headers) writeToHttp(req *http.Request) error {
 	kvs, err := h.kvs()
 	if err != nil {
 		return err

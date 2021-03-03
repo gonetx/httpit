@@ -83,7 +83,6 @@ func (p *Pit) init(url string) (err error) {
 		headers:           p.c.Headers,
 		host:              p.c.Host,
 		stream:            p.c.Stream,
-		http2:             p.c.Http2,
 		maxConns:          p.c.Connections,
 		timeout:           p.c.Timeout,
 		disableKeepAlives: p.c.DisableKeepAlives,
@@ -98,14 +97,7 @@ func (p *Pit) init(url string) (err error) {
 		return
 	}
 
-	var newClient func(clientConfig) (client, error)
-	if p.c.Http1 || p.c.Http2 {
-		newClient = newHttpClient
-	} else {
-		newClient = newFasthttpClient
-	}
-
-	p.client, err = newClient(cc)
+	p.client, err = newFasthttpClient(cc)
 
 	return
 }
