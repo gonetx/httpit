@@ -100,7 +100,7 @@ func (p *Pit) run() tea.Msg {
 	n := p.c.Connections
 	p.wg.Add(n)
 	for i := 0; i < n; i++ {
-		go p.worker(i)
+		go p.worker()
 	}
 	// wait for all workers stop
 	p.wg.Wait()
@@ -108,14 +108,14 @@ func (p *Pit) run() tea.Msg {
 	return done
 }
 
-func (p *Pit) worker(i int) {
+func (p *Pit) worker() {
 	for {
 		select {
 		case <-p.doneChan:
 			p.wg.Done()
 			return
 		default:
-			p.statistic(p.do(i))
+			p.statistic(p.do())
 		}
 	}
 }

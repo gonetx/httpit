@@ -7,13 +7,14 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/valyala/fasthttp"
 )
 
 type client interface {
-	do(int) (int, time.Duration, error)
+	do() (int, time.Duration, error)
 }
 
 type clientDoer interface {
@@ -39,47 +40,52 @@ type clientConfig struct {
 }
 
 type fasthttpClient struct {
-	doer    clientDoer
-	reqs    []*fasthttp.Request
-	resps   []*fasthttp.Response
-	readers []*bytes.Reader
-	body    []byte
+	doer           clientDoer
+	reqPool        sync.Pool
+	bodyStreamPool sync.Pool
+	rawReq         *fasthttp.Request
+	body           []byte
+	stream         bool
 }
 
 func newFasthttpClient(cc clientConfig) (client, error) {
 	c := &fasthttpClient{
-		reqs:    make([]*fasthttp.Request, cc.maxConns, cc.maxConns),
-		resps:   make([]*fasthttp.Response, cc.maxConns, cc.maxConns),
-		readers: make([]*bytes.Reader, cc.maxConns, cc.maxConns),
-		body:    cc.body,
+		body:           cc.body,
+		stream:         cc.stream,
+		bodyStreamPool: sync.Pool{New: func() interface{} { return bytes.NewReader(nil) }},
 	}
 
-	isTLS, addr, err := getIsTLSAndAddr(cc.url)
-	if err != nil {
+	req := fasthttp.AcquireRequest()
+	req.Header.DisableNormalizing()
+	req.Header.SetMethod(cc.method)
+	req.SetRequestURI(cc.url)
+	if err := cc.headers.writeToFasthttp(req); err != nil {
 		return nil, err
 	}
+	if !cc.stream {
+		// set constant body
+		req.SetBody(cc.body)
+	}
+	if cc.disableKeepAlives {
+		req.Header.ConnectionClose()
+	}
+	if cc.host != "" {
+		req.URI().SetHost(cc.host)
+	}
 
-	for i := 0; i < cc.maxConns; i++ {
-		req := fasthttp.AcquireRequest()
-		req.Header.SetMethod(cc.method)
-		req.SetRequestURI(cc.url)
-		if err = cc.headers.writeToFasthttp(req); err != nil {
-			return nil, err
-		}
-		if cc.stream {
-			c.readers[i] = bytes.NewReader(nil)
-		} else {
-			// set constant body
-			req.SetBody(cc.body)
-		}
-		if cc.disableKeepAlives {
-			req.Header.ConnectionClose()
-		}
-		if cc.host != "" {
-			req.URI().SetHost(cc.host)
-		}
-		c.reqs[i] = req
-		c.resps[i] = fasthttp.AcquireResponse()
+	c.rawReq = req
+
+	c.reqPool = sync.Pool{
+		New: func() interface{} {
+			req := fasthttp.AcquireRequest()
+			c.rawReq.CopyTo(req)
+			return req
+		},
+	}
+
+	isTLS, addr, err := getIsTLSAndAddr(c.rawReq)
+	if err != nil {
+		return nil, err
 	}
 
 	if cc.pipeline {
@@ -121,16 +127,22 @@ func getDialer(cc clientConfig) fasthttp.DialFunc {
 	return fasthttpDialer(cc.throughput, cc.timeout)
 }
 
-func (c *fasthttpClient) do(i int) (code int, latency time.Duration, err error) {
+func (c *fasthttpClient) do() (code int, latency time.Duration, err error) {
 	var (
-		req    = c.reqs[i]
-		resp   = c.resps[i]
-		reader = c.readers[i]
+		req  = c.reqPool.Get().(*fasthttp.Request)
+		resp = fasthttp.AcquireResponse()
 	)
 
-	if reader != nil {
-		reader.Reset(c.body)
-		req.SetBodyStream(reader, -1)
+	defer func() {
+		c.reqPool.Put(req)
+		fasthttp.ReleaseResponse(resp)
+	}()
+
+	if c.stream {
+		bodyStream := c.bodyStreamPool.Get().(*bytes.Reader)
+		bodyStream.Reset(c.body)
+		req.SetBodyStream(bodyStream, -1)
+		c.bodyStreamPool.Put(bodyStream)
 	}
 
 	start := time.Now()
@@ -149,10 +161,7 @@ var (
 	strHTTPS = []byte("https")
 )
 
-func getIsTLSAndAddr(url string) (isTLS bool, addr string, err error) {
-	req := fasthttp.AcquireRequest()
-	defer fasthttp.ReleaseRequest(req)
-	req.SetRequestURI(url)
+func getIsTLSAndAddr(req *fasthttp.Request) (isTLS bool, addr string, err error) {
 	uri := req.URI()
 	host := uri.Host()
 
