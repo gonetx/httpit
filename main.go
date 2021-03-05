@@ -37,6 +37,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&config.SocksProxy, "socksProxy", "", "Socks proxy address")
 	rootCmd.PersistentFlags().BoolVarP(&config.DisableKeepAlives, "disableKeepAlives", "a", false, "Disable HTTP keep-alive, if true, will set header Connection: close")
 	rootCmd.PersistentFlags().BoolVarP(&config.Insecure, "insecure", "k", false, "Controls whether a client verifies the server's certificate chain and host name")
+	rootCmd.PersistentFlags().BoolVarP(&config.Pipeline, "pipeline", "p", false, "Use fasthttp pipeline client")
 }
 
 var rootCmd = &cobra.Command{

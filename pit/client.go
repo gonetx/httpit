@@ -25,16 +25,17 @@ type clientConfig struct {
 	url               string
 	headers           headers
 	host              string
-	stream            bool
 	body              []byte
-	http2             bool
 	maxConns          int
 	timeout           time.Duration
 	tlsConfig         *tls.Config
-	disableKeepAlives bool
 	throughput        *int64
 	httpProxy         string
 	socksProxy        string
+	stream            bool
+	http2             bool
+	disableKeepAlives bool
+	pipeline          bool
 }
 
 type fasthttpClient struct {
@@ -81,15 +82,29 @@ func newFasthttpClient(cc clientConfig) (client, error) {
 		c.resps[i] = fasthttp.AcquireResponse()
 	}
 
-	c.doer = &fasthttp.HostClient{
-		Addr:                          addr,
-		Dial:                          getDialer(cc),
-		IsTLS:                         isTLS,
-		TLSConfig:                     cc.tlsConfig,
-		MaxConns:                      cc.maxConns,
-		ReadTimeout:                   cc.timeout,
-		DisableHeaderNamesNormalizing: true,
-		DisablePathNormalizing:        true,
+	if cc.pipeline {
+		c.doer = &fasthttp.PipelineClient{
+			Addr:        addr,
+			Dial:        getDialer(cc),
+			IsTLS:       isTLS,
+			TLSConfig:   cc.tlsConfig,
+			MaxConns:    cc.maxConns,
+			ReadTimeout: cc.timeout,
+			//DisableHeaderNamesNormalizing: true,
+			DisablePathNormalizing: true,
+			Logger:                 discardLogger{},
+		}
+	} else {
+		c.doer = &fasthttp.HostClient{
+			Addr:                          addr,
+			Dial:                          getDialer(cc),
+			IsTLS:                         isTLS,
+			TLSConfig:                     cc.tlsConfig,
+			MaxConns:                      cc.maxConns,
+			ReadTimeout:                   cc.timeout,
+			DisableHeaderNamesNormalizing: true,
+			DisablePathNormalizing:        true,
+		}
 	}
 
 	return c, nil
@@ -165,3 +180,7 @@ func addMissingPort(addr string, isTLS bool) string {
 	}
 	return net.JoinHostPort(addr, strconv.Itoa(port))
 }
+
+type discardLogger struct{}
+
+func (discardLogger) Printf(_ string, _ ...interface{}) {}

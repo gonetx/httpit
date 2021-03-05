@@ -22,4 +22,5 @@ type Config struct {
 	Stream            bool
 	DisableKeepAlives bool
 	Insecure          bool
+	Pipeline          bool
 }
