@@ -17,6 +17,8 @@ type Config struct {
 	File              string
 	Cert              string
 	Key               string
+	HttpProxy         string
+	SocksProxy        string
 	Stream            bool
 	DisableKeepAlives bool
 	Insecure          bool

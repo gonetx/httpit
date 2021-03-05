@@ -33,6 +33,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&config.Stream, "stream", "s", false, "Use stream body")
 	rootCmd.PersistentFlags().StringVar(&config.Cert, "cert", "", "Path to the client's TLS Certificate")
 	rootCmd.PersistentFlags().StringVar(&config.Key, "key", "", "Path to the client's TLS Certificate Private Key")
+	rootCmd.PersistentFlags().StringVar(&config.HttpProxy, "httpProxy", "", "Http proxy address")
+	rootCmd.PersistentFlags().StringVar(&config.SocksProxy, "socksProxy", "", "Socks proxy address")
 	rootCmd.PersistentFlags().BoolVarP(&config.DisableKeepAlives, "disableKeepAlives", "a", false, "Disable HTTP keep-alive, if true, will set header Connection: close")
 	rootCmd.PersistentFlags().BoolVarP(&config.Insecure, "insecure", "k", false, "Controls whether a client verifies the server's certificate chain and host name")
 }

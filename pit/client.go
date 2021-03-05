@@ -33,6 +33,8 @@ type clientConfig struct {
 	tlsConfig         *tls.Config
 	disableKeepAlives bool
 	throughput        *int64
+	httpProxy         string
+	socksProxy        string
 }
 
 type fasthttpClient struct {
@@ -81,7 +83,7 @@ func newFasthttpClient(cc clientConfig) (client, error) {
 
 	c.doer = &fasthttp.HostClient{
 		Addr:                          addr,
-		Dial:                          fasthttpDialFunc(cc.throughput, cc.timeout),
+		Dial:                          getDialer(cc),
 		IsTLS:                         isTLS,
 		TLSConfig:                     cc.tlsConfig,
 		MaxConns:                      cc.maxConns,
@@ -91,6 +93,17 @@ func newFasthttpClient(cc clientConfig) (client, error) {
 	}
 
 	return c, nil
+}
+
+func getDialer(cc clientConfig) fasthttp.DialFunc {
+	if cc.httpProxy != "" {
+		return fasthttpHttpProxyDialer(cc.throughput, cc.httpProxy, cc.timeout)
+	}
+	if cc.socksProxy != "" {
+		return fasthttpSocksProxyDialer(cc.throughput, cc.httpProxy)
+	}
+
+	return fasthttpDialer(cc.throughput, cc.timeout)
 }
 
 func (c *fasthttpClient) do(i int) (code int, latency time.Duration, err error) {
