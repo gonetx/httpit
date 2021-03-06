@@ -7,7 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/progress"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/reflow/margin"
 	"github.com/muesli/termenv"
@@ -17,8 +18,14 @@ import (
 
 var color = termenv.ColorProfile().Color
 
-const done = 1
-const fieldWidth = 20
+const (
+	done         = 1
+	fieldWidth   = 20
+	fps          = 40
+	padding      = 2
+	maxWidth     = 66
+	processColor = "#c0c0c0"
+)
 
 type tui struct {
 	throughput int64
@@ -41,19 +48,18 @@ type tui struct {
 	duration    time.Duration
 	connections int
 	initCmd     tea.Cmd
-	spinner     spinner.Model
+	progressBar *progress.Model
 	quitting    bool
 	done        bool
 }
 
 func newTui() *tui {
-	s := spinner.NewModel()
-	s.Spinner = spinner.Dot
+	progressBar, _ := progress.NewModel(progress.WithSolidFill(processColor))
 
 	return &tui{
-		errs:    make(map[string]int),
-		buf:     bytebufferpool.Get(),
-		spinner: s,
+		errs:        make(map[string]int),
+		buf:         bytebufferpool.Get(),
+		progressBar: progressBar,
 	}
 }
 
@@ -63,7 +69,7 @@ func (t *tui) start(url string) error {
 }
 
 func (t *tui) Init() tea.Cmd {
-	return tea.Batch(spinner.Tick, t.initCmd)
+	return tea.Batch(tickNow, t.initCmd)
 }
 
 func (t *tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -81,6 +87,12 @@ func (t *tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			return t, nil
 		}
+	case tea.WindowSizeMsg:
+		t.progressBar.Width = msg.Width - padding*2 - 4
+		if t.progressBar.Width > maxWidth {
+			t.progressBar.Width = maxWidth
+		}
+		return t, nil
 
 	case int:
 		var cmd tea.Cmd
@@ -91,9 +103,7 @@ func (t *tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return t, cmd
 
 	default:
-		var cmd tea.Cmd
-		t.spinner, cmd = t.spinner.Update(msg)
-		return t, cmd
+		return t, tick()
 	}
 
 }
@@ -137,6 +147,7 @@ func (t *tui) output() string {
 	t.buf.Reset()
 
 	t.writeTitle()
+	t.writeProcessBar()
 	t.writeTotalRequest()
 	t.writeElapsed()
 	t.writeThroughput()
@@ -149,13 +160,27 @@ func (t *tui) output() string {
 }
 
 func (t *tui) writeTitle() {
-	dot := termenv.String(t.spinner.View()).Foreground(color("205")).String()
-	_, _ = t.buf.WriteString(dot)
 	_, _ = t.buf.WriteString("Benchmarking ")
 	_, _ = t.buf.WriteString(t.url)
 	_, _ = t.buf.WriteString(" with ")
 	t.writeInt(t.connections)
 	_, _ = t.buf.WriteString(" connections\n")
+}
+
+func (t *tui) writeProcessBar() {
+	var percent float64
+	if t.count != 0 {
+		percent = float64(atomic.LoadInt64(&t.reqs)) / float64(t.count)
+	} else {
+		percent = float64(atomic.LoadInt64(&t.elapsed)) / float64(t.duration)
+	}
+
+	if percent > 1.0 {
+		percent = 1.0
+	}
+
+	_, _ = t.buf.WriteString(t.progressBar.View(percent))
+	_ = t.buf.WriteByte('\n')
 }
 
 func (t *tui) writeTotalRequest() {
@@ -366,4 +391,18 @@ func formatThroughput(throughput float64) (float64, string) {
 	default:
 		return throughput / 1e12, "GB/s"
 	}
+}
+
+type tickMsg struct {
+	Time time.Time
+}
+
+func tickNow() tea.Msg {
+	return tickMsg{Time: time.Now()}
+}
+
+func tick() tea.Cmd {
+	return tea.Tick(time.Second/fps, func(t time.Time) tea.Msg {
+		return tickMsg{Time: t}
+	})
 }
