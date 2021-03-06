@@ -395,7 +395,7 @@ func formatThroughput(throughput float64) (float64, string) {
 	case throughput < 1e9:
 		return throughput / 1e6, "MB/s"
 	default:
-		return throughput / 1e12, "GB/s"
+		return throughput / 1e9, "GB/s"
 	}
 }
 

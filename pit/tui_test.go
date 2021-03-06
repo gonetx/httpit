@@ -7,7 +7,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_writeProcessBar(t *testing.T) {
+func Test_tui_appendCode(t *testing.T) {
+	t.Parallel()
+
+	tt := newTui()
+	tt.appendCode(101)
+	tt.appendCode(201)
+	tt.appendCode(301)
+	tt.appendCode(401)
+	tt.appendCode(501)
+	tt.appendCode(601)
+
+	assert.Equal(t, int64(1), tt.code1xx)
+	assert.Equal(t, int64(1), tt.code2xx)
+	assert.Equal(t, int64(1), tt.code3xx)
+	assert.Equal(t, int64(1), tt.code4xx)
+	assert.Equal(t, int64(1), tt.code5xx)
+	assert.Equal(t, int64(1), tt.codeOthers)
+}
+
+func Test_tui_writeProcessBar(t *testing.T) {
 	t.Parallel()
 
 	tt := newTui()
@@ -17,7 +36,7 @@ func Test_writeProcessBar(t *testing.T) {
 	assert.Contains(t, tt.buf.String(), "100%")
 }
 
-func Test_writeTotalRequest(t *testing.T) {
+func Test_tui_writeTotalRequest(t *testing.T) {
 	t.Parallel()
 
 	tt := newTui()
@@ -27,7 +46,7 @@ func Test_writeTotalRequest(t *testing.T) {
 	assert.Contains(t, tt.buf.String(), "2/3")
 }
 
-func Test_writeElapsed(t *testing.T) {
+func Test_tui_writeElapsed(t *testing.T) {
 	t.Parallel()
 
 	tt := newTui()
@@ -37,7 +56,7 @@ func Test_writeElapsed(t *testing.T) {
 	assert.Contains(t, tt.buf.String(), "1.00/1.00")
 }
 
-func Test_writeThroughput(t *testing.T) {
+func Test_tui_writeThroughput(t *testing.T) {
 	t.Parallel()
 
 	tt := newTui()
@@ -47,7 +66,7 @@ func Test_writeThroughput(t *testing.T) {
 	assert.Contains(t, tt.buf.String(), "1.00 KB/s")
 }
 
-func Test_writeErrors(t *testing.T) {
+func Test_tui_writeErrors(t *testing.T) {
 	t.Parallel()
 
 	tt := newTui()
@@ -55,4 +74,62 @@ func Test_writeErrors(t *testing.T) {
 	tt.writeErrors()
 	assert.Contains(t, tt.buf.String(), "custom-error")
 	assert.Contains(t, tt.buf.String(), "1")
+}
+
+func Test_tui_writeHint(t *testing.T) {
+	t.Parallel()
+
+	t.Run("done", func(t *testing.T) {
+		tt := newTui()
+		tt.done = true
+		tt.writeHint()
+		assert.Contains(t, tt.buf.String(), "Done")
+	})
+
+	t.Run("terminate", func(t *testing.T) {
+		tt := newTui()
+		tt.quitting = true
+		tt.writeHint()
+		assert.Contains(t, tt.buf.String(), "Terminated")
+	})
+}
+
+func Test_tui_writeInt(t *testing.T) {
+	t.Parallel()
+
+	tt := newTui()
+	tt.writeInt(12, "#444")
+	assert.Contains(t, tt.buf.String(), "12")
+}
+
+func Test_rpsResult(t *testing.T) {
+	avg, stdev, max := rpsResult([]float64{1, 6, 5, 7, 9, 8})
+	assert.Equal(t, 6.0, avg)
+	assert.Equal(t, 2.8284271247461903, stdev)
+	assert.Equal(t, 9.0, max)
+}
+
+func Test_latencyResult(t *testing.T) {
+	avg, stdev, max := latencyResult([]int64{1e6, 6e6, 5e6, 7e6, 9e6, 8e6})
+	assert.Equal(t, 6.0e3, avg)
+	assert.Equal(t, 2828.42712474619, stdev)
+	assert.Equal(t, 9.0e3, max)
+}
+
+func Test_formatThroughput(t *testing.T) {
+	v, u := formatThroughput(100)
+	assert.Equal(t, 100.0, v)
+	assert.Equal(t, "B/s", u)
+
+	v, u = formatThroughput(1001)
+	assert.Equal(t, 1.001, v)
+	assert.Equal(t, "KB/s", u)
+
+	v, u = formatThroughput(1111111)
+	assert.Equal(t, 1.111111, v)
+	assert.Equal(t, "MB/s", u)
+
+	v, u = formatThroughput(1111111111)
+	assert.Equal(t, 1.111111111, v)
+	assert.Equal(t, "GB/s", u)
 }
