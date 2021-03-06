@@ -34,7 +34,6 @@ type clientConfig struct {
 	httpProxy         string
 	socksProxy        string
 	stream            bool
-	http2             bool
 	disableKeepAlives bool
 	pipeline          bool
 }
@@ -50,9 +49,8 @@ type fasthttpClient struct {
 
 func newFasthttpClient(cc clientConfig) (client, error) {
 	c := &fasthttpClient{
-		body:           cc.body,
-		stream:         cc.stream,
-		bodyStreamPool: sync.Pool{New: func() interface{} { return bytes.NewReader(nil) }},
+		body:   cc.body,
+		stream: cc.stream,
 	}
 
 	req := fasthttp.AcquireRequest()
@@ -75,13 +73,7 @@ func newFasthttpClient(cc clientConfig) (client, error) {
 
 	c.rawReq = req
 
-	c.reqPool = sync.Pool{
-		New: func() interface{} {
-			req := fasthttp.AcquireRequest()
-			c.rawReq.CopyTo(req)
-			return req
-		},
-	}
+	c.initPool()
 
 	isTLS, addr, err := getIsTLSAndAddr(c.rawReq)
 	if err != nil {
@@ -125,6 +117,22 @@ func getDialer(cc clientConfig) fasthttp.DialFunc {
 	}
 
 	return fasthttpDialer(cc.throughput, cc.timeout)
+}
+
+func (c *fasthttpClient) initPool() {
+	c.reqPool = sync.Pool{
+		New: func() interface{} {
+			req := fasthttp.AcquireRequest()
+			c.rawReq.CopyTo(req)
+			return req
+		},
+	}
+
+	c.bodyStreamPool = sync.Pool{
+		New: func() interface{} {
+			return bytes.NewReader(nil)
+		},
+	}
 }
 
 func (c *fasthttpClient) do() (code int, latency time.Duration, err error) {
