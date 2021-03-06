@@ -24,7 +24,7 @@ const (
 	fps          = 40
 	padding      = 2
 	maxWidth     = 66
-	processColor = "#c0c0c0"
+	processColor = "#444"
 )
 
 type tui struct {
@@ -256,34 +256,28 @@ func (t *tui) writeLatency(latency float64) {
 func (t *tui) writeCodes() {
 	_, _ = t.buf.WriteString("HTTP codes:\n  ")
 
-	_, _ = t.buf.WriteString(termenv.String("1xx").Foreground(color("#ffaf00")).String())
-	_, _ = t.buf.WriteString(" - ")
-	t.writeInt(int(atomic.LoadInt64(&t.code1xx)))
+	_, _ = t.buf.WriteString("1xx - ")
+	t.writeInt(int(atomic.LoadInt64(&t.code1xx)), "#ffaf00")
 	_, _ = t.buf.WriteString(", ")
 
-	_, _ = t.buf.WriteString(termenv.String("2xx").Foreground(color("#00ff00")).String())
-	_, _ = t.buf.WriteString(" - ")
-	t.writeInt(int(atomic.LoadInt64(&t.code2xx)))
+	_, _ = t.buf.WriteString("2xx - ")
+	t.writeInt(int(atomic.LoadInt64(&t.code2xx)), "#00ff00")
 	_, _ = t.buf.WriteString(", ")
 
-	_, _ = t.buf.WriteString(termenv.String("3xx").Foreground(color("#ffff00")).String())
-	_, _ = t.buf.WriteString(" - ")
-	t.writeInt(int(atomic.LoadInt64(&t.code3xx)))
+	_, _ = t.buf.WriteString("3xx - ")
+	t.writeInt(int(atomic.LoadInt64(&t.code3xx)), "#ffff00")
 	_, _ = t.buf.WriteString(", ")
 
-	_, _ = t.buf.WriteString(termenv.String("4xx").Foreground(color("#ff8700")).String())
-	_, _ = t.buf.WriteString(" - ")
-	t.writeInt(int(atomic.LoadInt64(&t.code4xx)))
+	_, _ = t.buf.WriteString("4xx - ")
+	t.writeInt(int(atomic.LoadInt64(&t.code4xx)), "#ff8700")
 	_, _ = t.buf.WriteString(", ")
 
-	_, _ = t.buf.WriteString(termenv.String("5xx").Foreground(color("#ff0000")).String())
-	_, _ = t.buf.WriteString(" - ")
-	t.writeInt(int(atomic.LoadInt64(&t.code5xx)))
+	_, _ = t.buf.WriteString("5xx - ")
+	t.writeInt(int(atomic.LoadInt64(&t.code5xx)), "#870000")
 	_, _ = t.buf.WriteString("\n  ")
 
-	_, _ = t.buf.WriteString(termenv.String("Others").Foreground(color("#808080")).String())
-	_, _ = t.buf.WriteString(" - ")
-	t.writeInt(int(atomic.LoadInt64(&t.codeOthers)))
+	_, _ = t.buf.WriteString("Others - ")
+	t.writeInt(int(atomic.LoadInt64(&t.codeOthers)), "#444")
 	_, _ = t.buf.WriteString("\n")
 }
 
@@ -314,8 +308,13 @@ func (t *tui) writeHint() {
 	}
 }
 
-func (t *tui) writeInt(i int) {
-	t.buf.B = fasthttp.AppendUint(t.buf.B, i)
+func (t *tui) writeInt(i int, colorStr ...string) {
+	if i <= 0 || len(colorStr) == 0 {
+		t.buf.B = fasthttp.AppendUint(t.buf.B, i)
+		return
+	}
+
+	_, _ = t.buf.WriteString(termenv.String(strconv.Itoa(i)).Foreground(color(colorStr[0])).String())
 }
 
 func (t *tui) writeFloat(f float64) {
