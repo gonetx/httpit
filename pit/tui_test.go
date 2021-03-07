@@ -1,8 +1,11 @@
 package pit
 
 import (
+	"io/ioutil"
 	"testing"
 	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -132,4 +135,53 @@ func Test_formatThroughput(t *testing.T) {
 	v, u = formatThroughput(1111111111)
 	assert.Equal(t, 1.111111111, v)
 	assert.Equal(t, "GB/s", u)
+}
+
+func Test_tui_Update(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name    string
+		initCmd tea.Cmd
+	}{
+		{"press esc", func() tea.Msg { return tea.KeyMsg{Type: tea.KeyEsc} }},
+		{"press q", func() tea.Msg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}} }},
+		{"press ctrl + c", func() tea.Msg { return tea.KeyMsg{Type: tea.KeyCtrlC} }},
+		{"done", func() tea.Msg { return done }},
+		{"skip normal key", tea.Batch(
+			func() tea.Msg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}} },
+			func() tea.Msg { return done },
+		)},
+		{"windows size msg", tea.Batch(
+			func() tea.Msg { return tea.WindowSizeMsg{Height: 10, Width: 100} },
+			func() tea.Msg { return done },
+		)},
+		{"tick fps", tea.Batch(
+			func() tea.Msg { return tick() },
+			func() tea.Msg { return done },
+		)},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tt := getTui(t, tc.initCmd)
+
+			err := tea.NewProgram(tt, tea.WithOutput(tt.w)).Start()
+			assert.Nil(t, err)
+
+			assert.Nil(t, tt.w.Close())
+		})
+	}
+}
+
+func getTui(t *testing.T, initCmd tea.Cmd) *tui {
+	tt := newTui()
+	tt.count = 1
+	tt.initCmd = initCmd
+
+	f, err := ioutil.TempFile("", "")
+	assert.Nil(t, err)
+	tt.w = f
+
+	return tt
 }

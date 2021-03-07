@@ -23,7 +23,7 @@ var color = termenv.ColorProfile().Color
 const (
 	done         = 1
 	fieldWidth   = 20
-	fps          = 40
+	defaultFps   = time.Duration(40)
 	padding      = 2
 	maxWidth     = 66
 	processColor = "#444"
@@ -408,7 +408,7 @@ func tickNow() tea.Msg {
 }
 
 func tick() tea.Cmd {
-	return tea.Tick(time.Second/fps, func(t time.Time) tea.Msg {
+	return tea.Tick(time.Second/defaultFps, func(t time.Time) tea.Msg {
 		return tickMsg{Time: t}
 	})
 }
