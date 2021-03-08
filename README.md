@@ -6,6 +6,10 @@
   <a href="https://github.com/gonetx/httpit/actions?query=workflow%3ATest">
     <img src="https://img.shields.io/github/workflow/status/gofiber/fiber/Test?label=%F0%9F%A7%AA%20tests&style=flat&color=75C46B">
   </a>
+  <a href="https://codecov.io/gh/gonetx/httpit">
+    <img src="https://codecov.io/gh/gonetx/httpit/branch/main/graph/badge.svg?token=RABB5SC45Y"/>
+  </a>
+
 </p>
 
 `httpit` is a rapid http(s) benchmark tool which on top of [fasthttp](https://github.com/valyala/fasthttp).
