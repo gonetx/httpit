@@ -3,6 +3,7 @@ package pit
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fasthttp"
@@ -103,6 +104,8 @@ func (d *fakeDoer) Do(req *fasthttp.Request, resp *fasthttp.Response) error {
 	}
 
 	assert.Equal(d.t, "body", string(req.Body()))
+
+	time.Sleep(time.Millisecond * 20)
 
 	resp.Header.SetStatusCode(d.code)
 
