@@ -25,6 +25,10 @@ func Test_fasthttpDialer(t *testing.T) {
 	var throughput int64
 
 	t.Run("timeout", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("skip windows test")
+		}
+
 		hc := &fasthttp.HostClient{
 			Addr: addr,
 			Dial: fasthttpDialer(&throughput, time.Nanosecond),
