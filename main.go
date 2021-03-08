@@ -30,7 +30,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&config.Host, "host", "", "Http request host")
 	rootCmd.PersistentFlags().StringVarP(&config.Body, "body", "b", "", "Http request body")
 	rootCmd.PersistentFlags().StringVarP(&config.File, "file", "f", "", "Read http request body from file path")
-	rootCmd.PersistentFlags().BoolVarP(&config.Stream, "stream", "s", false, "Use stream body")
+	rootCmd.PersistentFlags().BoolVarP(&config.Stream, "stream", "s", false, "Use stream body to reduce memory usage")
 	rootCmd.PersistentFlags().StringVar(&config.Cert, "cert", "", "Path to the client's TLS Certificate")
 	rootCmd.PersistentFlags().StringVar(&config.Key, "key", "", "Path to the client's TLS Certificate Private Key")
 	rootCmd.PersistentFlags().StringVar(&config.HttpProxy, "httpProxy", "", "Http proxy address")
@@ -55,4 +55,5 @@ var rootCmd = &cobra.Command{
 			cmd.PrintErrln(err)
 		}
 	},
+	SilenceErrors: true,
 }
