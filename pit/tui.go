@@ -1,9 +1,7 @@
 package pit
 
 import (
-	"io"
 	"math"
-	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -30,9 +28,6 @@ const (
 )
 
 type tui struct {
-	r io.Reader
-	w *os.File
-
 	throughput int64
 	reqs       int64
 	elapsed    int64
@@ -62,8 +57,6 @@ func newTui() *tui {
 	progressBar, _ := progress.NewModel(progress.WithSolidFill(processColor))
 
 	return &tui{
-		r:           os.Stdin,
-		w:           os.Stdout,
 		errs:        make(map[string]int),
 		buf:         bytebufferpool.Get(),
 		progressBar: progressBar,
@@ -72,7 +65,7 @@ func newTui() *tui {
 
 func (t *tui) start(url string) error {
 	t.url = url
-	return tea.NewProgram(t, tea.WithInput(t.r), tea.WithOutput(t.w)).Start()
+	return tea.NewProgram(t).Start()
 }
 
 func (t *tui) Init() tea.Cmd {

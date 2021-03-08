@@ -2,8 +2,6 @@ package pit
 
 import (
 	"errors"
-	"io/ioutil"
-	"os"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -24,13 +22,7 @@ func Test_Pit_Run(t *testing.T) {
 		p.tui.initCmd = func() tea.Msg {
 			return tea.Quit()
 		}
-		f, err := ioutil.TempFile("", "")
-		assert.Nil(t, err)
-		p.tui.w = f
-		defer func() {
-			_ = f.Close()
-			_ = os.RemoveAll(f.Name())
-		}()
+
 		assert.Nil(t, p.Run("url"))
 	})
 }
