@@ -158,7 +158,10 @@ func Test_tui_Update(t *testing.T) {
 		)},
 		{"tick fps", tea.Batch(
 			func() tea.Msg { return tick() },
-			func() tea.Msg { return done },
+			func() tea.Msg {
+				time.Sleep(time.Millisecond * 100)
+				return done
+			},
 		)},
 	}
 

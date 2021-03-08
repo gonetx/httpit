@@ -108,3 +108,7 @@ func (d *fakeDoer) Do(req *fasthttp.Request, resp *fasthttp.Response) error {
 
 	return nil
 }
+
+func Test_discard_pipeline_logger(t *testing.T) {
+	discardLogger{}.Printf("")
+}

@@ -41,19 +41,23 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:     "httpit",
-	Short:   "httpit is a rapid http benchmark tool",
-	Version: version,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return errors.New("missing url")
-		}
-		return nil
-	},
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := pit.New(config).Run(args[0]); err != nil {
-			cmd.PrintErrln(err)
-		}
-	},
+	Use:           "httpit",
+	Short:         "httpit is a rapid http benchmark tool",
+	Version:       version,
+	Args:          rootArgs,
+	Run:           rootRun,
 	SilenceErrors: true,
+}
+
+func rootArgs(_ *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		return errors.New("missing url")
+	}
+	return nil
+}
+
+func rootRun(cmd *cobra.Command, args []string) {
+	if err := pit.New(config).Run(args[0]); err != nil {
+		cmd.PrintErrln(err)
+	}
 }
