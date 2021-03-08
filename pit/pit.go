@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"io/ioutil"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -170,9 +171,10 @@ func getBody(filename, body string) ([]byte, error) {
 		return []byte(body), nil
 	}
 
-	return ioutil.ReadFile(filename)
+	return ioutil.ReadFile(filepath.Clean(filename))
 }
 
+/* #nosec G402 */
 func getTlsConfig(cert, key string, insecure bool) (c *tls.Config, err error) {
 	var certs []tls.Certificate
 	if certs, err = readClientCert(cert, key); err != nil {
