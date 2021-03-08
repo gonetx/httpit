@@ -35,6 +35,7 @@ func Test_fasthttpDialer(t *testing.T) {
 		resp := &fasthttp.Response{}
 
 		err = hc.Do(req, resp)
+		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), "timed out")
 	})
 
@@ -80,6 +81,7 @@ func Test_fasthttpHttpProxyDialer(t *testing.T) {
 		resp := &fasthttp.Response{}
 
 		err = hc.Do(req, resp)
+		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), "timed out")
 	})
 
@@ -140,6 +142,7 @@ func Test_fasthttpSocksProxyDialer(t *testing.T) {
 		resp := &fasthttp.Response{}
 
 		err = hc.Do(req, resp)
+		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), "socks proxy")
 	})
 
