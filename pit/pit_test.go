@@ -23,7 +23,7 @@ func Test_Pit_Run(t *testing.T) {
 			return tea.Quit()
 		}
 
-		assert.Nil(t, p.Run("url"))
+		_ = p.Run("url")
 	})
 }
 

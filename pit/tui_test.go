@@ -1,6 +1,7 @@
 package pit
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -170,7 +171,7 @@ func Test_tui_Update(t *testing.T) {
 			tt.count = 1
 			tt.initCmd = tc.initCmd
 
-			err := tea.NewProgram(tt).Start()
+			err := tea.NewProgram(tt, tea.WithInput(os.Stdin)).Start()
 			assert.Nil(t, err)
 		})
 	}
