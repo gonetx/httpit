@@ -2,6 +2,7 @@ package pit
 
 import (
 	"net"
+	"runtime"
 	"testing"
 	"time"
 
@@ -70,6 +71,9 @@ func Test_fasthttpHttpProxyDialer(t *testing.T) {
 	var throughput int64
 
 	t.Run("timeout", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("skip windows test")
+		}
 		hc := &fasthttp.HostClient{
 			Addr: addr,
 			Dial: fasthttpHttpProxyDialer(&throughput, addr, time.Nanosecond),
