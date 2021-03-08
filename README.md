@@ -15,7 +15,7 @@
 `httpit` is a rapid http(s) benchmark tool which on top of [fasthttp](https://github.com/valyala/fasthttp).
 
 ## Installation
-Just run `go get -u github.com/gonetx/httpit`
+Get binaries from [releases](https://github.com/gonetx/httpit/releases) or just run `go get -u github.com/gonetx/httpit`.
 
 ## Usage
 ```bash
