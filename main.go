@@ -41,7 +41,7 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:           "httpit",
+	Use:           "httpit url",
 	Short:         "httpit is a rapid http benchmark tool",
 	Version:       version,
 	Args:          rootArgs,
