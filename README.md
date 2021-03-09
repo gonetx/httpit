@@ -12,7 +12,7 @@
 
 </p>
 
-`httpit` is a rapid http(s) benchmark tool which on top of [fasthttp](https://github.com/valyala/fasthttp).
+`httpit` is a rapid http(s) benchmark tool which on top of [fasthttp](https://github.com/valyala/fasthttp). Also thanks to [cobra](https://github.com/spf13/cobra) and [bubbletea](https://github.com/charmbracelet/bubbletea).
 
 ## Installation
 Get binaries from [releases](https://github.com/gonetx/httpit/releases) or just run `go get -u github.com/gonetx/httpit`.
@@ -43,6 +43,15 @@ Flags:
   -t, --timeout duration    Socket/request timeout (default 3s)
   -v, --version             version for httpit
 ```
+
+### Override host
+Use `--host` to override `Host` header for the use case like `curl "http://127.0.0.1" -H "Host: www.example.com"` to bypass DNS resolving.
+
+### Proxy
+Use `--httpProxy` and `--socksProxy` to specific proxies for some rare cases.
+
+### Pipeline
+Use `-p|--pipeline` to specific fasthttp pipeline client.
 
 ## Examples
 ### Use duration
