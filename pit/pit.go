@@ -58,15 +58,15 @@ func New(c Config) *Pit {
 	return p
 }
 
-func (p *Pit) Run(url string) (err error) {
-	if err = p.init(url); err != nil {
+func (p *Pit) Run(url string, args ...string) (err error) {
+	if err = p.init(url, args...); err != nil {
 		return
 	}
 
 	return p.tui.start(url)
 }
 
-func (p *Pit) init(url string) (err error) {
+func (p *Pit) init(url string, args ...string) (err error) {
 	if url == "" {
 		return errors.New("missing url")
 	}

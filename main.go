@@ -68,7 +68,7 @@ func rootArgs(_ *cobra.Command, args []string) error {
 }
 
 func rootRun(cmd *cobra.Command, args []string) {
-	if err := pit.New(config).Run(args[0]); err != nil {
+	if err := pit.New(config).Run(args[0], args[1:]...); err != nil {
 		cmd.PrintErrln(err)
 	}
 }
