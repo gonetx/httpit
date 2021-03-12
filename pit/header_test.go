@@ -8,6 +8,8 @@ import (
 )
 
 func Test_Header_kvs_invalid_header(t *testing.T) {
+	t.Parallel()
+
 	testCases := []headers{
 		{"foo"},
 		{"foo:bar:baz"},
@@ -21,6 +23,8 @@ func Test_Header_kvs_invalid_header(t *testing.T) {
 }
 
 func Test_Header_kvs(t *testing.T) {
+	t.Parallel()
+
 	testCases := []headers{
 		{"foo:bar"},
 		{" foo:bar"},
@@ -44,6 +48,8 @@ func Test_Header_kvs(t *testing.T) {
 }
 
 func Test_Header_WriteToFasthttp(t *testing.T) {
+	t.Parallel()
+
 	var req fasthttp.Request
 	var h headers = []string{"foo:bar", "foo:bar", "bar:baz"}
 	assert.Nil(t, h.writeToFasthttp(&req))

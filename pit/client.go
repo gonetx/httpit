@@ -2,142 +2,82 @@ package pit
 
 import (
 	"bytes"
-	"crypto/tls"
 	"fmt"
-	"net"
-	"strconv"
-	"strings"
+	"io"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/valyala/fasthttp"
 )
 
+const (
+	MIMEApplicationJSON = "application/json"
+	MIMEApplicationForm = "application/x-www-form-urlencoded"
+)
+
 type client interface {
 	do() (int, time.Duration, error)
+	doOnce() error
 }
 
 type clientDoer interface {
-	Do(req *fasthttp.Request, resp *fasthttp.Response) error
+	Do(*fasthttp.Request, *fasthttp.Response) error
 }
 
-type clientConfig struct {
-	method            string
-	url               string
-	headers           headers
-	host              string
-	body              []byte
-	maxConns          int
-	timeout           time.Duration
-	tlsConfig         *tls.Config
-	throughput        *int64
-	httpProxy         string
-	socksProxy        string
-	stream            bool
-	disableKeepAlives bool
-	pipeline          bool
+type onceClientDoer interface {
+	clientDoer
+	DoRedirects(*fasthttp.Request, *fasthttp.Response, int) error
 }
 
 type fasthttpClient struct {
 	doer           clientDoer
+	onceDoer       onceClientDoer
 	reqPool        sync.Pool
 	bodyStreamPool sync.Pool
 	rawReq         *fasthttp.Request
 	body           []byte
 	stream         bool
+	maxRedirects   int
+	wc             io.WriteCloser
 }
 
-func newFasthttpClient(cc clientConfig) (client, error) {
-	c := &fasthttpClient{
-		body:   cc.body,
-		stream: cc.stream,
+func newFasthttpClient(c *Config) (fc *fasthttpClient, err error) {
+	fc = &fasthttpClient{
+		maxRedirects: c.getMaxRedirects(),
+		rawReq:       fasthttp.AcquireRequest(),
+		stream:       c.Stream,
+		wc:           defaultWriteCloser{Writer: os.Stdout},
 	}
 
-	req := fasthttp.AcquireRequest()
-	req.Header.DisableNormalizing()
-	req.Header.SetMethod(cc.method)
-	req.SetRequestURI(cc.url)
-	if err := cc.headers.writeToFasthttp(req); err != nil {
-		return nil, err
+	if err = c.setReqBasic(fc.rawReq); err != nil {
+		return
 	}
-	if !cc.stream {
-		// set constant body
-		req.SetBody(cc.body)
+	if err = c.setReqBody(fc.rawReq); err != nil {
+		return
 	}
-	if cc.disableKeepAlives {
-		req.Header.ConnectionClose()
-	}
-	if cc.host != "" {
-		req.URI().SetHost(cc.host)
+	fc.body = c.body
+
+	if err = c.setReqHeader(fc.rawReq); err != nil {
+		return
 	}
 
-	c.rawReq = req
-
-	c.initPool()
-
-	isTLS, addr, err := getIsTLSAndAddr(c.rawReq)
-	if err != nil {
-		return nil, err
+	if c.tlsConf, err = c.getTlsConfig(); err != nil {
+		return
 	}
 
-	if cc.pipeline {
-		c.doer = &fasthttp.PipelineClient{
-			Addr:        addr,
-			Dial:        getDialer(cc),
-			IsTLS:       isTLS,
-			TLSConfig:   cc.tlsConfig,
-			MaxConns:    cc.maxConns,
-			ReadTimeout: cc.timeout,
-			//DisableHeaderNamesNormalizing: true,
-			DisablePathNormalizing: true,
-			Logger:                 discardLogger{},
-		}
+	if c.Debug {
+		fc.onceDoer = c.hostClient()
 	} else {
-		c.doer = &fasthttp.HostClient{
-			Addr:                          addr,
-			Dial:                          getDialer(cc),
-			IsTLS:                         isTLS,
-			TLSConfig:                     cc.tlsConfig,
-			MaxConns:                      cc.maxConns,
-			ReadTimeout:                   cc.timeout,
-			DisableHeaderNamesNormalizing: true,
-			DisablePathNormalizing:        true,
-		}
+		fc.doer = c.doer()
 	}
 
-	return c, nil
-}
-
-func getDialer(cc clientConfig) fasthttp.DialFunc {
-	if cc.httpProxy != "" {
-		return fasthttpHttpProxyDialer(cc.throughput, cc.httpProxy, cc.timeout)
-	}
-	if cc.socksProxy != "" {
-		return fasthttpSocksProxyDialer(cc.throughput, cc.httpProxy)
-	}
-
-	return fasthttpDialer(cc.throughput, cc.timeout)
-}
-
-func (c *fasthttpClient) initPool() {
-	c.reqPool = sync.Pool{
-		New: func() interface{} {
-			req := fasthttp.AcquireRequest()
-			c.rawReq.CopyTo(req)
-			return req
-		},
-	}
-
-	c.bodyStreamPool = sync.Pool{
-		New: func() interface{} {
-			return bytes.NewReader(nil)
-		},
-	}
+	return
 }
 
 func (c *fasthttpClient) do() (code int, latency time.Duration, err error) {
 	var (
-		req  = c.reqPool.Get().(*fasthttp.Request)
+		req  = c.acquireReq()
 		resp = fasthttp.AcquireResponse()
 	)
 
@@ -147,8 +87,7 @@ func (c *fasthttpClient) do() (code int, latency time.Duration, err error) {
 	}()
 
 	if c.stream {
-		bodyStream := c.bodyStreamPool.Get().(*bytes.Reader)
-		bodyStream.Reset(c.body)
+		bodyStream := c.acquireBodyStream()
 		req.SetBodyStream(bodyStream, -1)
 		c.bodyStreamPool.Put(bodyStream)
 	}
@@ -164,40 +103,66 @@ func (c *fasthttpClient) do() (code int, latency time.Duration, err error) {
 	return
 }
 
-var (
-	strHTTP  = []byte("http")
-	strHTTPS = []byte("https")
-)
-
-func getIsTLSAndAddr(req *fasthttp.Request) (isTLS bool, addr string, err error) {
-	uri := req.URI()
-	host := uri.Host()
-
-	scheme := uri.Scheme()
-	if bytes.Equal(scheme, strHTTPS) {
-		isTLS = true
-	} else if !bytes.Equal(scheme, strHTTP) {
-		err = fmt.Errorf("unsupported protocol %q. http and https are supported", scheme)
-		return
+func (c *fasthttpClient) acquireReq() *fasthttp.Request {
+	v := c.reqPool.Get()
+	if v == nil {
+		req := fasthttp.AcquireRequest()
+		c.rawReq.CopyTo(req)
+		return req
 	}
 
-	addr = addMissingPort(string(host), isTLS)
-
-	return
+	return v.(*fasthttp.Request)
 }
 
-func addMissingPort(addr string, isTLS bool) string {
-	n := strings.Index(addr, ":")
-	if n >= 0 {
-		return addr
+func (c *fasthttpClient) acquireBodyStream() *bytes.Reader {
+	v := c.bodyStreamPool.Get()
+	if v == nil {
+		return bytes.NewReader(c.body)
 	}
-	port := 80
-	if isTLS {
-		port = 443
+	bodyStream := v.(*bytes.Reader)
+	bodyStream.Reset(c.body)
+	return bodyStream
+}
+
+func (c *fasthttpClient) doOnce() (err error) {
+	var (
+		req  = c.rawReq
+		resp = fasthttp.AcquireResponse()
+	)
+
+	if c.stream {
+		req.SetBodyStream(bytes.NewReader(c.body), -1)
 	}
-	return net.JoinHostPort(addr, strconv.Itoa(port))
+
+	defer func() {
+		if err == nil {
+			// output debug info
+			// ignore all errors
+			msg := fmt.Sprintf("Connected to %s(%v)\r\n\r\n", req.URI().Host(), resp.RemoteAddr())
+			_, _ = c.wc.Write([]byte(msg))
+			_, _ = req.WriteTo(c.wc)
+			_, _ = resp.WriteTo(c.wc)
+			_ = c.wc.Close()
+		}
+	}()
+
+	if c.maxRedirects > 0 {
+		err = c.onceDoer.DoRedirects(c.rawReq, resp, c.maxRedirects)
+	} else {
+		err = c.onceDoer.Do(c.rawReq, resp)
+	}
+
+	return
 }
 
 type discardLogger struct{}
 
 func (discardLogger) Printf(_ string, _ ...interface{}) {}
+
+type defaultWriteCloser struct {
+	io.Writer
+}
+
+func (wc defaultWriteCloser) Close() error {
+	return nil
+}

@@ -28,7 +28,7 @@ const (
 )
 
 type tui struct {
-	throughput int64
+	throughput *int64
 	reqs       int64
 	elapsed    int64
 	code1xx    int64
@@ -63,8 +63,7 @@ func newTui() *tui {
 	}
 }
 
-func (t *tui) start(url string) error {
-	t.url = url
+func (t *tui) start() error {
 	return tea.NewProgram(t).Start()
 }
 
@@ -211,7 +210,7 @@ func (t *tui) writeThroughput() {
 	_, _ = t.buf.WriteString("Throughput:  ")
 	elapsed := time.Duration(atomic.LoadInt64(&t.elapsed))
 	if seconds := elapsed.Seconds(); seconds != 0 {
-		throughput, unit := formatThroughput(float64(t.throughput) / seconds)
+		throughput, unit := formatThroughput(float64(atomic.LoadInt64(t.throughput)) / seconds)
 		t.writeFloat(throughput)
 		_ = t.buf.WriteByte(' ')
 		_, _ = t.buf.WriteString(unit)

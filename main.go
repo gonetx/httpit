@@ -33,7 +33,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&config.Body, "body", "b", "", "Http request body string")
 	rootCmd.Flags().StringVarP(&config.File, "file", "f", "", "Read http request body from file path")
 	rootCmd.Flags().BoolVarP(&config.Stream, "stream", "s", false, "Use stream body to reduce memory usage")
-	rootCmd.Flags().BoolVarP(&config.JSON, "json", "J", true, "Send json request by setting the Content-Type header to application/json")
+	rootCmd.Flags().BoolVarP(&config.JSON, "json", "J", false, "Send json request by setting the Content-Type header to application/json")
 	rootCmd.Flags().BoolVarP(&config.Form, "form", "F", false, "Send form request by setting the Content-Type header to application/x-www-form-urlencoded")
 	rootCmd.Flags().BoolVarP(&config.MultipartForm, "multipartForm", "M", false, "Send multipart form request by setting the Content-Type header to multipart/form-data")
 	rootCmd.Flags().StringSliceVar(&config.MultipartFormFiles, "multipartFormFiles", nil, "Files paths to be attached to multipart form")
@@ -44,10 +44,8 @@ func init() {
 	rootCmd.Flags().StringVar(&config.HttpProxy, "httpProxy", "", "Http proxy address")
 	rootCmd.Flags().StringVar(&config.SocksProxy, "socksProxy", "", "Socks proxy address")
 	rootCmd.Flags().BoolVarP(&config.Pipeline, "pipeline", "p", false, "Use fasthttp pipeline client")
-	rootCmd.Flags().BoolVar(&config.Follow, "follow", false, "Follow 30x Location redirects")
+	rootCmd.Flags().BoolVar(&config.Follow, "follow", false, "Follow 30x Location redirects for debug mode")
 	rootCmd.Flags().IntVar(&config.MaxRedirects, "maxRedirects", 0, "Max redirect count of following 30x, default is 30 (work with --follow)")
-	rootCmd.Flags().StringVarP(&config.Output, "output", "o", "", "Save output to FILE instead of stdout")
-	rootCmd.Flags().BoolVarP(&config.Quite, "quiet", "q", false, "Do not print any result to stdout")
 	rootCmd.Flags().BoolVarP(&config.Debug, "debug", "D", false, "Send request once and show request and response detail")
 }
 
@@ -68,7 +66,9 @@ func rootArgs(_ *cobra.Command, args []string) error {
 }
 
 func rootRun(cmd *cobra.Command, args []string) {
-	if err := pit.New(config).Run(args[0], args[1:]...); err != nil {
+	config.Url = args[0]
+	config.Args = args[1:]
+	if err := pit.New(config).Run(); err != nil {
 		cmd.PrintErrln(err)
 	}
 }

@@ -12,43 +12,53 @@ import (
 )
 
 func Test_Pit_Run(t *testing.T) {
+	t.Parallel()
+
 	t.Run("missing url", func(t *testing.T) {
 		p := New(Config{})
-		assert.NotNil(t, p.Run(""))
+		assert.NotNil(t, p.Run())
+	})
+
+	t.Run("do once in debug mode", func(t *testing.T) {
+		p := New(Config{Url: "url", Debug: true})
+		p.client = newFakeClient()
+		assert.Nil(t, p.Run())
 	})
 
 	t.Run("success", func(t *testing.T) {
-		p := New(Config{})
+		p := New(Config{Url: "url"})
 		p.tui.initCmd = func() tea.Msg {
 			return tea.Quit()
 		}
+		p.client = newFakeClient()
 
-		_ = p.Run("url")
+		assert.Nil(t, p.Run())
 	})
 }
 
 func Test_Pit_Init(t *testing.T) {
 	t.Parallel()
+
 	url := "url"
 
 	t.Run("missing url", func(t *testing.T) {
 		p := New(Config{})
-		assert.NotNil(t, p.init(""))
+		assert.NotNil(t, p.init())
 	})
 
 	t.Run("no file", func(t *testing.T) {
-		p := New(Config{File: "not-exist"})
-		assert.NotNil(t, p.init(url))
+		p := New(Config{Url: url, File: "not-exist"})
+		assert.NotNil(t, p.init())
 	})
 
 	t.Run("no cert", func(t *testing.T) {
-		p := New(Config{Cert: "not-cert"})
-		assert.NotNil(t, p.init(url))
+		p := New(Config{Url: url, Cert: "not-cert"})
+		assert.NotNil(t, p.init())
 	})
 
 	t.Run("success", func(t *testing.T) {
-		p := New(Config{})
-		assert.Nil(t, p.init(url))
+		p := New(Config{Url: url})
+		assert.Nil(t, p.init())
 	})
 }
 
@@ -98,12 +108,6 @@ func Test_Pit_Statistic(t *testing.T) {
 	})
 }
 
-func Test_ReadClientCert(t *testing.T) {
-	cert, err := readClientCert("testdata/ssl.pem", "testdata/ssl.key")
-	assert.Nil(t, err)
-	assert.Len(t, cert, 1)
-}
-
 type fakeClient struct {
 	err   error
 	count int64
@@ -120,4 +124,8 @@ func newFakeClient(err ...error) *fakeClient {
 func (fc *fakeClient) do() (int, time.Duration, error) {
 	atomic.AddInt64(&fc.count, 1)
 	return 0, 0, nil
+}
+
+func (fc *fakeClient) doOnce() error {
+	return fc.err
 }

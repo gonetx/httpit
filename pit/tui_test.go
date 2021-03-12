@@ -62,8 +62,9 @@ func Test_tui_writeElapsed(t *testing.T) {
 func Test_tui_writeThroughput(t *testing.T) {
 	t.Parallel()
 
+	var throughput int64 = 1001
 	tt := newTui()
-	tt.throughput = 1001
+	tt.throughput = &throughput
 	tt.elapsed = int64(time.Second)
 	tt.writeThroughput()
 	assert.Contains(t, tt.buf.String(), "1.00 KB/s")
@@ -106,6 +107,8 @@ func Test_tui_writeInt(t *testing.T) {
 }
 
 func Test_rpsResult(t *testing.T) {
+	t.Parallel()
+
 	avg, stdev, max := rpsResult([]float64{1, 6, 5, 7, 9, 8})
 	assert.Equal(t, 6.0, avg)
 	assert.Equal(t, 2.8284271247461903, stdev)
@@ -113,6 +116,8 @@ func Test_rpsResult(t *testing.T) {
 }
 
 func Test_latencyResult(t *testing.T) {
+	t.Parallel()
+
 	avg, stdev, max := latencyResult([]int64{1e6, 6e6, 5e6, 7e6, 9e6, 8e6})
 	assert.Equal(t, 6.0e3, avg)
 	assert.Equal(t, 2828.42712474619, stdev)
@@ -120,6 +125,8 @@ func Test_latencyResult(t *testing.T) {
 }
 
 func Test_formatThroughput(t *testing.T) {
+	t.Parallel()
+
 	v, u := formatThroughput(100)
 	assert.Equal(t, 100.0, v)
 	assert.Equal(t, "B/s", u)

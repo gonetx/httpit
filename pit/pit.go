@@ -1,10 +1,7 @@
 package pit
 
 import (
-	"crypto/tls"
 	"errors"
-	"io/ioutil"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -13,9 +10,10 @@ import (
 )
 
 const (
-	defaultConnections = 128
-	defaultDuration    = time.Second * 10
-	defaultTimeout     = time.Second * 3
+	defaultConnections  = 128
+	defaultDuration     = time.Second * 10
+	defaultTimeout      = time.Second * 3
+	defaultMaxRedirects = 30
 )
 
 type Pit struct {
@@ -49,49 +47,41 @@ func New(c Config) *Pit {
 		p.c.Timeout = defaultTimeout
 	}
 
+	if p.c.MaxRedirects <= 0 {
+		p.c.MaxRedirects = defaultMaxRedirects
+	}
+
 	p.tui = newTui()
-	p.count = p.c.Count
-	p.duration = p.c.Duration
-	p.connections = p.c.Connections
+	p.tui.count = p.c.Count
+	p.tui.duration = p.c.Duration
+	p.tui.connections = p.c.Connections
+	p.tui.url = p.c.Url
+	p.tui.throughput = &p.c.throughput
 	p.initCmd = p.run
 
 	return p
 }
 
-func (p *Pit) Run(url string, args ...string) (err error) {
-	if err = p.init(url, args...); err != nil {
+func (p *Pit) Run() (err error) {
+	if err = p.init(); err != nil {
 		return
 	}
 
-	return p.tui.start(url)
+	if p.c.Debug {
+		return p.doOnce()
+	}
+
+	return p.tui.start()
 }
 
-func (p *Pit) init(url string, args ...string) (err error) {
-	if url == "" {
+func (p *Pit) init() (err error) {
+	if p.c.Url == "" {
 		return errors.New("missing url")
 	}
 
-	cc := clientConfig{
-		method:            p.c.Method,
-		url:               url,
-		headers:           p.c.Headers,
-		host:              p.c.Host,
-		stream:            p.c.Stream,
-		maxConns:          p.c.Connections,
-		timeout:           p.c.Timeout,
-		disableKeepAlives: p.c.DisableKeepAlives,
-		throughput:        &p.throughput,
+	if p.client == nil {
+		p.client, err = newFasthttpClient(p.c)
 	}
-
-	if cc.body, err = getBody(p.c.File, p.c.Body); err != nil {
-		return
-	}
-
-	if cc.tlsConfig, err = getTlsConfig(p.c.Cert, p.c.Key, p.c.Insecure); err != nil {
-		return
-	}
-
-	p.client, err = newFasthttpClient(cc)
 
 	return
 }
@@ -164,40 +154,4 @@ func (p *Pit) statistic(code int, latency time.Duration, err error) {
 		// notify workers to stop
 		close(p.doneChan)
 	}
-}
-
-func getBody(filename, body string) ([]byte, error) {
-	if filename == "" {
-		return []byte(body), nil
-	}
-
-	return ioutil.ReadFile(filepath.Clean(filename))
-}
-
-/* #nosec G402 */
-func getTlsConfig(cert, key string, insecure bool) (c *tls.Config, err error) {
-	var certs []tls.Certificate
-	if certs, err = readClientCert(cert, key); err != nil {
-		return
-	}
-	c = &tls.Config{
-		Certificates:       certs,
-		InsecureSkipVerify: insecure,
-	}
-	return
-}
-
-func readClientCert(certPath, keyPath string) (certs []tls.Certificate, err error) {
-	if certPath == "" && keyPath == "" {
-		return
-	}
-
-	var cert tls.Certificate
-	if cert, err = tls.LoadX509KeyPair(certPath, keyPath); err != nil {
-		return
-	}
-
-	certs = append(certs, cert)
-
-	return
 }
