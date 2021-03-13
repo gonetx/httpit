@@ -108,6 +108,28 @@ func Test_Pit_Statistic(t *testing.T) {
 	})
 }
 
+func Test_addMissingSchemaAndHost(t *testing.T) {
+	testCases := []struct {
+		url    string
+		target string
+	}{
+		{":3000", "http://127.0.0.1:3000"},
+		{"127.0.0.1:3000", "http://127.0.0.1:3000"},
+		{"example.com", "http://example.com"},
+		{"http://example.com", "http://example.com"},
+		{"https://example.com", "https://example.com"},
+		{"ftp://example.com", "ftp://example.com"},
+		{"://example.com", "://example.com"},
+		{"//example.com", "//example.com"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.url, func(t *testing.T) {
+			assert.Equal(t, tc.target, addMissingSchemaAndHost(tc.url))
+		})
+	}
+}
+
 type fakeClient struct {
 	err   error
 	count int64
