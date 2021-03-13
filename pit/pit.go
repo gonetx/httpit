@@ -36,10 +36,6 @@ func New(c Config) *Pit {
 		doneChan: make(chan struct{}),
 	}
 
-	// :3000 => http://127.0.0.1
-	// example.com => http://example.com
-	p.c.Url = addMissingSchemaAndHost(p.c.Url)
-
 	if p.c.Connections <= 0 {
 		p.c.Connections = defaultConnections
 	}
@@ -60,21 +56,10 @@ func New(c Config) *Pit {
 	p.tui.count = p.c.Count
 	p.tui.duration = p.c.Duration
 	p.tui.connections = p.c.Connections
-	p.tui.url = p.c.Url
 	p.tui.throughput = &p.c.throughput
 	p.initCmd = p.run
 
 	return p
-}
-
-func addMissingSchemaAndHost(url string) string {
-	if !strings.HasPrefix(url, "://") && strings.HasPrefix(url, ":") {
-		return "http://127.0.0.1" + url
-	}
-	if strings.Index(url, "//") == -1 {
-		return "http://" + url
-	}
-	return url
 }
 
 func (p *Pit) Run() (err error) {
@@ -94,11 +79,26 @@ func (p *Pit) init() (err error) {
 		return errors.New("missing url")
 	}
 
+	// :3000 => http://127.0.0.1
+	// example.com => http://example.com
+	p.c.Url = addMissingSchemaAndHost(p.c.Url)
+	p.tui.url = p.c.Url
+
 	if p.client == nil {
 		p.client, err = newFasthttpClient(p.c)
 	}
 
 	return
+}
+
+func addMissingSchemaAndHost(url string) string {
+	if !strings.HasPrefix(url, "://") && strings.HasPrefix(url, ":") {
+		return "http://127.0.0.1" + url
+	}
+	if strings.Index(url, "//") == -1 {
+		return "http://" + url
+	}
+	return url
 }
 
 func (p *Pit) run() tea.Msg {
