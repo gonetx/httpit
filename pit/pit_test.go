@@ -2,6 +2,8 @@ package pit
 
 import (
 	"errors"
+	"io/ioutil"
+	"os"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -30,6 +32,9 @@ func Test_Pit_Run(t *testing.T) {
 		p.tui.initCmd = func() tea.Msg {
 			return tea.Quit()
 		}
+		p.tui.w = ioutil.Discard
+		p.tui.r = os.Stdin
+
 		p.client = newFakeClient()
 
 		assert.Nil(t, p.Run())
@@ -109,6 +114,8 @@ func Test_Pit_Statistic(t *testing.T) {
 }
 
 func Test_addMissingSchemaAndHost(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		url    string
 		target string
