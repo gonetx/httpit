@@ -115,14 +115,6 @@ func Test_Config_setReqHeader(t *testing.T) {
 		assert.Nil(t, c.setReqHeader(req))
 		assert.Equal(t, MIMEApplicationForm, string(req.Header.ContentType()))
 	})
-
-	t.Run("multipart form", func(t *testing.T) {
-		c, req := configAndReq()
-		c.MultipartForm = true
-		c.Boundary = "myBoundary"
-		assert.Nil(t, c.setReqHeader(req))
-		assert.Equal(t, "multipart/form-data; boundary="+c.Boundary, string(req.Header.ContentType()))
-	})
 }
 
 func configAndReq() (*Config, *fasthttp.Request) {

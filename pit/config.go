@@ -15,33 +15,30 @@ import (
 )
 
 type Config struct {
-	Connections        int
-	Count              int
-	Duration           time.Duration
-	Timeout            time.Duration
-	Url                string
-	Method             string
-	Args               []string
-	Headers            []string
-	Host               string
-	DisableKeepAlives  bool
-	Body               string
-	File               string
-	Stream             bool
-	JSON               bool
-	Form               bool
-	MultipartForm      bool
-	MultipartFormFiles []string
-	Boundary           string
-	Insecure           bool
-	Cert               string
-	Key                string
-	HttpProxy          string
-	SocksProxy         string
-	Pipeline           bool
-	Follow             bool
-	MaxRedirects       int
-	Debug              bool
+	Connections       int
+	Count             int
+	Duration          time.Duration
+	Timeout           time.Duration
+	Url               string
+	Method            string
+	Args              []string
+	Headers           []string
+	Host              string
+	DisableKeepAlives bool
+	Body              string
+	File              string
+	Stream            bool
+	JSON              bool
+	Form              bool
+	Insecure          bool
+	Cert              string
+	Key               string
+	HttpProxy         string
+	SocksProxy        string
+	Pipeline          bool
+	Follow            bool
+	MaxRedirects      int
+	Debug             bool
 
 	throughput int64
 	body       []byte
@@ -125,8 +122,6 @@ func (c *Config) setReqBody(req *fasthttp.Request) (err error) {
 		c.body, err = ioutil.ReadFile(filepath.Clean(c.File))
 	}
 
-	// TODO parse files and args
-
 	if !c.Stream {
 		// set constant body
 		req.SetBody(c.body)
@@ -155,11 +150,8 @@ func (c *Config) setReqHeader(req *fasthttp.Request) (err error) {
 	if c.Form {
 		req.Header.SetContentType(MIMEApplicationForm)
 	}
-	if c.MultipartForm {
-		req.Header.SetMultipartFormBoundary(c.Boundary)
-	}
 
-	return nil
+	return
 }
 
 func (c *Config) getDialer() fasthttp.DialFunc {
