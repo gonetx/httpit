@@ -164,13 +164,13 @@ func Test_tui_Update(t *testing.T) {
 			func() tea.Msg { return tea.WindowSizeMsg{Height: 10, Width: 100} },
 			func() tea.Msg { return done },
 		)},
-		{"tick fps", tea.Batch(
-			func() tea.Msg { return tick() },
-			func() tea.Msg {
-				time.Sleep(time.Millisecond * 100)
-				return done
-			},
-		)},
+		//{"tick fps", tea.Batch(
+		//	func() tea.Msg { return tick() },
+		//	func() tea.Msg {
+		//		time.Sleep(time.Millisecond * 100)
+		//		return done
+		//	},
+		//)},
 	}
 
 	for _, tc := range testCases {
