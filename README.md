@@ -9,6 +9,9 @@
   <a href="https://codecov.io/gh/gonetx/httpit">
     <img src="https://codecov.io/gh/gonetx/httpit/branch/main/graph/badge.svg?token=RABB5SC45Y"/>
   </a>
+  <a href="https://github.com/gonetx/httpit#donate">
+    <img src="https://img.shields.io/badge/donate-bitcoin-yellow.svg"/>
+  </a>
 
 </p>
 
@@ -63,3 +66,9 @@ Use `-p|--pipeline` to specific fasthttp pipeline client.
 `httpit -X GET "http://httpbin.org/get" -H "accept: application/json" -c2 -n15`
 
 ![count](capture/count.gif)
+
+## Donate
+
+If you use and love httpit, please consider sending some Satoshi to `13nYCk48jF3kGnHmYuJMbBpUGsY6kUeHsX`. In case you want to be mentioned as a sponsor, let me know!
+
+![Donate Bitcoin](capture/btc.jpg)
