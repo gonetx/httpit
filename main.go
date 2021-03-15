@@ -27,8 +27,8 @@ func init() {
 	rootCmd.Flags().DurationVarP(&config.Duration, "duration", "d", time.Second*10, "Duration of test")
 	rootCmd.Flags().DurationVarP(&config.Timeout, "timeout", "t", time.Second*3, "Socket/request timeout")
 	rootCmd.Flags().StringVarP(&config.Method, "method", "X", "GET", "Http request method")
-	rootCmd.Flags().StringSliceVarP(&config.Headers, "header", "H", nil, "HTTP request header with format \"K: V\", can be repeated")
-	rootCmd.Flags().StringVar(&config.Host, "host", "", "Http request host")
+	rootCmd.Flags().StringSliceVarP(&config.Headers, "header", "H", nil, headersUsage)
+	rootCmd.Flags().StringVar(&config.Host, "host", "", "Override request host")
 	rootCmd.Flags().BoolVarP(&config.DisableKeepAlives, "disableKeepAlives", "a", false, "Disable HTTP keep-alive, if true, will set header Connection: close")
 	rootCmd.Flags().StringVarP(&config.Body, "body", "b", "", "Http request body string")
 	rootCmd.Flags().StringVarP(&config.File, "file", "f", "", "Read http request body from file path")
@@ -69,3 +69,10 @@ func rootRun(cmd *cobra.Command, args []string) {
 		cmd.PrintErrln(err)
 	}
 }
+
+const (
+	headersUsage = `HTTP request header with format "K: V", can be repeated
+Examples:
+	-H "k1: v1" -H k2:v2
+	-H "k3: v3, k4: v4"`
+)
