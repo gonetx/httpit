@@ -120,8 +120,9 @@ func Test_addMissingSchemaAndHost(t *testing.T) {
 		url    string
 		target string
 	}{
-		{":3000", "http://127.0.0.1:3000"},
-		{"127.0.0.1:3000", "http://127.0.0.1:3000"},
+		{":3000", "http://localhost:3000"},
+		{"/foo", "http://localhost/foo"},
+		{"localhost:3000", "http://localhost:3000"},
 		{"example.com", "http://example.com"},
 		{"http://example.com", "http://example.com"},
 		{"https://example.com", "https://example.com"},

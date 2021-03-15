@@ -93,10 +93,18 @@ func (p *Pit) init() (err error) {
 
 func addMissingSchemaAndHost(url string) string {
 	if !strings.HasPrefix(url, "://") && strings.HasPrefix(url, ":") {
-		return "http://127.0.0.1" + url
+		// :3000 => http://localhost:3000
+		return "http://localhost" + url
 	}
-	if strings.Index(url, "//") == -1 {
-		return "http://" + url
+	if strings.Index(url, "://") == -1 && len(url) >= 2 {
+		if url[0] == '/' && url[1] != '/' {
+			// /foo => http://localhost/foo
+			return "http://localhost" + url
+		}
+		if url[0] != '/' && url[1] != '/' {
+			// example.com => http://example.com
+			return "http://" + url
+		}
 	}
 	return url
 }
