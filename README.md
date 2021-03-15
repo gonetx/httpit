@@ -69,6 +69,8 @@ Use `-p|--pipeline` to specific fasthttp pipeline client.
 
 ## Donate
 
-If you use and love httpit, please consider sending some Satoshi to `13nYCk48jF3kGnHmYuJMbBpUGsY6kUeHsX`. In case you want to be mentioned as a sponsor, let me know!
+If you use and love httpit, please consider sending some Satoshi to `3AJ3wgRP1mCxiFD8mqKkDZaCahwgDj3gSh`. 
+
+In case you want to be mentioned as a sponsor, please let me know!
 
 ![Donate Bitcoin](capture/btc.jpg)
