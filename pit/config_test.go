@@ -33,6 +33,47 @@ func Test_Config_setReqBasic(t *testing.T) {
 	})
 }
 
+func Test_Config_parseArgs(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		args     []string
+		isForm   bool
+		isJson   bool
+		expected string
+	}{
+		{"form no value", []string{"foo"}, true, false, "foo"},
+		{"form one kv", []string{" foo=bar"}, true, false, "foo=bar"},
+		{"form two kv", []string{"foo=bar ", "bar=baz"}, true, false, "foo=bar&bar=baz"},
+		{"form escape kv", []string{"foo=bar=baz"}, true, false, "foo=bar%3Dbaz"},
+		{"json no value", []string{"foo:="}, false, true, `{"foo":""}`},
+		{"json bool true value", []string{" foo:=true"}, false, true, `{"foo":true}`},
+		{"json bool false value", []string{"foo:= False"}, false, true, `{"foo":False}`},
+		{"json int value", []string{"foo:=1 "}, false, true, `{"foo":1}`},
+		{"json float value", []string{"foo:=1.1"}, false, true, `{"foo":1.1}`},
+		{"json array value", []string{"foo :=[1]"}, false, true, `{"foo":[1]}`},
+		{"json object value", []string{`foo:={"bar":"baz"}`}, false, true, `{"foo":{"bar":"baz"}}`},
+		{"json string value", []string{`foo:= baz`}, false, true, `{"foo":"baz"}`},
+		{"json invalid bool tru value", []string{"foo:=tru"}, false, true, `{"foo":"tru"}`},
+		{"json invalid bool false value", []string{"foo:=fals"}, false, true, `{"foo":"fals"}`},
+		{"json invalid int value", []string{"foo:=1aa"}, false, true, `{"foo":"1aa"}`},
+		{"json invalid float value", []string{"foo:=1.1.1"}, false, true, `{"foo":"1.1.1"}`},
+		{"json two kv", []string{"foo:=true", "bar:=1"}, false, true, `{"foo":true,"bar":1}`},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _ := configAndReq()
+			c.Args = tc.args
+			c.parseArgs()
+			assert.Equal(t, tc.isForm, c.Form)
+			assert.Equal(t, tc.isJson, c.JSON)
+			assert.Equal(t, tc.expected, string(c.body))
+		})
+	}
+}
+
 func Test_Config_setReqBody(t *testing.T) {
 	t.Parallel()
 

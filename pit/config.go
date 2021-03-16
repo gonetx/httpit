@@ -116,9 +116,13 @@ func addMissingPort(addr string, isTLS bool) string {
 }
 
 func (c *Config) setReqBody(req *fasthttp.Request) (err error) {
-	if c.File == "" {
+	c.parseArgs()
+
+	if c.Body != "" {
 		c.body = []byte(c.Body)
-	} else {
+	}
+
+	if c.File != "" {
 		c.body, err = ioutil.ReadFile(filepath.Clean(c.File))
 	}
 
@@ -130,9 +134,84 @@ func (c *Config) setReqBody(req *fasthttp.Request) (err error) {
 	return
 }
 
-func (c *Config) setReqHeader(req *fasthttp.Request) (err error) {
-	// TODO parse args
+// parseArgs gets body from extra args
+func (c *Config) parseArgs() {
+	if len(c.Args) == 0 {
+		return
+	}
 
+	isJson := true
+	for _, arg := range c.Args {
+		formEqualIndex := strings.Index(arg, "=")
+		jsonEqualIndex := strings.Index(arg, ":=")
+		// no "=" or "=" is before ":="
+		if formEqualIndex == -1 || jsonEqualIndex == -1 || formEqualIndex < jsonEqualIndex {
+			isJson = false
+		}
+	}
+
+	if isJson {
+		c.JSON = true
+		c.body = append(c.body, '{')
+		for ii, arg := range c.Args {
+			i := strings.Index(arg, ":=")
+			k, v := strings.TrimSpace(arg[:i]), strings.TrimSpace(arg[i+2:])
+			c.body = append(c.body, '"')
+			c.body = append(c.body, k...)
+			c.body = append(c.body, '"', ':')
+			b := needQuote(v)
+			if b {
+				c.body = append(c.body, '"')
+			}
+			c.body = append(c.body, v...)
+			if b {
+				c.body = append(c.body, '"')
+			}
+			if ii < len(c.Args)-1 {
+				c.body = append(c.body, ',')
+			}
+		}
+		c.body = append(c.body, '}')
+	} else {
+		c.Form = true
+		formArgs := fasthttp.AcquireArgs()
+		for _, arg := range c.Args {
+			i := strings.Index(arg, "=")
+			if i == -1 {
+				formArgs.AddNoValue(strings.TrimSpace(arg))
+			} else {
+				formArgs.Add(strings.TrimSpace(arg[:i]), strings.TrimSpace(arg[i+1:]))
+			}
+		}
+		c.body = formArgs.AppendBytes(c.body)
+		fasthttp.ReleaseArgs(formArgs)
+	}
+}
+
+func needQuote(v string) bool {
+	if vv := strings.ToLower(v); vv == "false" || vv == "true" {
+		return false
+	}
+	if _, err := strconv.Atoi(v); err == nil {
+		return false
+	}
+	if _, err := strconv.ParseFloat(v, 64); err == nil {
+		return false
+	}
+
+	l := len(v)
+	if l <= 1 {
+		return true
+	}
+
+	if (v[0] == '[' && v[l-1] == ']') || (v[0] == '{' && v[l-1] == '}') {
+		return false
+	}
+
+	return true
+}
+
+func (c *Config) setReqHeader(req *fasthttp.Request) (err error) {
 	if err = headers(c.Headers).writeToFasthttp(req); err != nil {
 		return
 	}
