@@ -50,6 +50,8 @@ func newFasthttpClient(c *Config) (fc *fasthttpClient, err error) {
 		wc:           defaultWriteCloser{Writer: os.Stdout},
 	}
 
+	c.parseArgs()
+
 	if err = c.setReqBasic(fc.rawReq); err != nil {
 		return
 	}

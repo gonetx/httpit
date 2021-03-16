@@ -111,8 +111,6 @@ func addMissingPort(addr string, isTLS bool) string {
 }
 
 func (c *Config) setReqBody(req *fasthttp.Request) (err error) {
-	c.parseArgs()
-
 	if c.Body != "" {
 		c.body = []byte(c.Body)
 	}
@@ -169,6 +167,7 @@ func (c *Config) parseArgs() {
 		c.body = append(c.body, '}')
 	} else {
 		c.Form = true
+		c.Method = fasthttp.MethodPost
 		formArgs := fasthttp.AcquireArgs()
 		for _, arg := range c.Args {
 			i := strings.Index(arg, "=")
