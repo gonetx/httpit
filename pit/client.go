@@ -141,6 +141,7 @@ func (c *fasthttpClient) doOnce() (err error) {
 			msg := fmt.Sprintf("Connected to %s(%v)\r\n\r\n", req.URI().Host(), resp.RemoteAddr())
 			_, _ = c.wc.Write([]byte(msg))
 			_, _ = req.WriteTo(c.wc)
+			_, _ = c.wc.Write([]byte("\n\n"))
 			_, _ = resp.WriteTo(c.wc)
 			_ = c.wc.Close()
 		}
