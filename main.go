@@ -47,7 +47,8 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:           "httpit url",
+	Use:           usage,
+	Example:       example,
 	Short:         "httpit is a rapid http benchmark tool",
 	Version:       version,
 	Args:          rootArgs,
@@ -71,6 +72,12 @@ func rootRun(cmd *cobra.Command, args []string) {
 }
 
 const (
+	usage   = `httpit [url|:port|/path] [k:v|k:=v ...]`
+	example = `	httpit https://www.google.com -c1 -n5   =>   httpit -X GET https://www.google.com -c1 -n5
+	httpit :3000 -c1 -n5                    =>   httpit -X GET http://localhost:3000 -c1 -n5
+	httpit /foo -c1 -n5                     =>   httpit -X GET http://localhost/foo -c1 -n5
+	httpit :3000 -c1 -n5 foo=bar            =>   httpit -X POST http://localhost:3000 -c1 -n5 -b="foo=bar"
+`
 	headersUsage = `HTTP request header with format "K: V", can be repeated
 Examples:
 	-H "k1: v1" -H k2:v2
