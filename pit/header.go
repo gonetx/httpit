@@ -15,12 +15,15 @@ func (h headers) writeToFasthttp(req *fasthttp.Request) error {
 		return err
 	}
 	for i := 0; i < len(kvs); i += 2 {
-		k, v := kvs[i], kvs[i+1]
-		if strings.ToLower(k) == "host" {
+		k, v := strings.ToLower(kvs[i]), kvs[i+1]
+		switch k {
+		case "host":
 			req.URI().SetHost(v)
-			continue
+		case "content-type", "user-agent", "content-length", "connection", "transfer-encoding":
+			req.Header.Set(k, v)
+		default:
+			req.Header.Add(k, v)
 		}
-		req.Header.Add(k, v)
 	}
 	return nil
 }

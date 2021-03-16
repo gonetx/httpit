@@ -51,9 +51,9 @@ func Test_Header_WriteToFasthttp(t *testing.T) {
 	t.Parallel()
 
 	var req fasthttp.Request
-	var h headers = []string{"foo:bar", "foo:bar", "bar:baz", "host:example.com"}
+	var h headers = []string{"foo:bar", "foo:bar", "bar:baz", "host:example.com", "user-agent:httpit"}
 	assert.Nil(t, h.writeToFasthttp(&req))
-	want := "GET / HTTP/1.1\r\nFoo: bar\r\nFoo: bar\r\nBar: baz\r\n\r\n"
+	want := "GET / HTTP/1.1\r\nUser-Agent: httpit\r\nFoo: bar\r\nFoo: bar\r\nBar: baz\r\n\r\n"
 	assert.Equal(t, want, string(req.Header.Header()))
 	assert.Equal(t, "example.com", string(req.URI().Host()))
 }
