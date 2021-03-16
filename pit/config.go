@@ -56,9 +56,7 @@ func (c *Config) doer() clientDoer {
 			TLSConfig:   c.tlsConf,
 			MaxConns:    c.Connections,
 			ReadTimeout: c.Timeout,
-			//DisableHeaderNamesNormalizing: true,
-			DisablePathNormalizing: true,
-			Logger:                 discardLogger{},
+			Logger:      discardLogger{},
 		}
 	}
 	return c.hostClient()
@@ -66,19 +64,16 @@ func (c *Config) doer() clientDoer {
 
 func (c *Config) hostClient() *fasthttp.HostClient {
 	return &fasthttp.HostClient{
-		Addr:                          c.addr,
-		Dial:                          c.getDialer(),
-		IsTLS:                         c.isTLS,
-		TLSConfig:                     c.tlsConf,
-		MaxConns:                      c.Connections,
-		ReadTimeout:                   c.Timeout,
-		DisableHeaderNamesNormalizing: true,
-		DisablePathNormalizing:        true,
+		Addr:        c.addr,
+		Dial:        c.getDialer(),
+		IsTLS:       c.isTLS,
+		TLSConfig:   c.tlsConf,
+		MaxConns:    c.Connections,
+		ReadTimeout: c.Timeout,
 	}
 }
 
 func (c *Config) setReqBasic(req *fasthttp.Request) (err error) {
-	req.Header.DisableNormalizing()
 	req.Header.SetMethod(c.Method)
 	req.SetRequestURI(c.Url)
 
