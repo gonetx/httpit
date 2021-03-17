@@ -76,8 +76,8 @@ const (
 	example = `	httpit https://www.google.com -c1 -n5   =>   httpit -X GET https://www.google.com -c1 -n5
 	httpit :3000 -c1 -n5                    =>   httpit -X GET http://localhost:3000 -c1 -n5
 	httpit /foo -c1 -n5                     =>   httpit -X GET http://localhost/foo -c1 -n5
-	httpit :3000 -c1 -n5 foo=bar            =>   httpit -X POST http://localhost:3000 -c1 -n5 -b="foo=bar"
-`
+	httpit :3000 -c1 -n5 foo:=bar           =>   httpit -X GET http://localhost:3000 -c1 -n5 -H "Content-Type: application/json" -b='{"foo":"bar"}'
+	httpit :3000 -c1 -n5 foo=bar            =>   httpit -X POST http://localhost:3000 -c1 -n5 -H "Content-Type: application/x-www-form-urlencoded" -b="foo=bar"`
 	headersUsage = `HTTP request header with format "K: V", can be repeated
 Examples:
 	-H "k1: v1" -H k2:v2
