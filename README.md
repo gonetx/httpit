@@ -23,27 +23,42 @@ Get binaries from [releases](https://github.com/gonetx/httpit/releases) or just 
 ## Usage
 ```bash
 Usage:
-  httpit url [flags]
+  httpit [url|:port|/path] [k:v|k:=v ...] [flags]
+
+Examples:
+        httpit https://www.google.com -c1 -n5   =>   httpit -X GET https://www.google.com -c1 -n5
+        httpit :3000 -c1 -n5                    =>   httpit -X GET http://localhost:3000 -c1 -n5
+        httpit /foo -c1 -n5                     =>   httpit -X GET http://localhost/foo -c1 -n5
+        httpit :3000 -c1 -n5 foo:=bar           =>   httpit -X GET http://localhost:3000 -c1 -n5 -H "Content-Type: application/json" -b='{"foo":"bar"}'
+        httpit :3000 -c1 -n5 foo=bar            =>   httpit -X POST http://localhost:3000 -c1 -n5 -H "Content-Type: application/x-www-form-urlencoded" -b="foo=bar"
 
 Flags:
-  -b, --body string         Http request body
-      --cert string         Path to the client's TLS Certificate
   -c, --connections int     Maximum number of concurrent connections (default 128)
-  -a, --disableKeepAlives   Disable HTTP keep-alive, if true, will set header Connection: close
+  -n, --requests int        Number of requests(if specified, then ignore the --duration)
   -d, --duration duration   Duration of test (default 10s)
-  -f, --file string         Read http request body from file path
-  -H, --header strings      HTTP request header with format "K: V", can be repeated
-  -h, --help                help for httpit
-      --host string         Http request host
-      --httpProxy string    Http proxy address
-  -k, --insecure            Controls whether a client verifies the server's certificate chain and host name
-      --key string          Path to the client's TLS Certificate Private Key
-  -X, --method string       Http request method (default "GET")
-  -p, --pipeline            Use fasthttp pipeline client
-  -n, --requests int        Number of requests
-      --socksProxy string   Socks proxy address
-  -s, --stream              Use stream body to reduce memory usage
   -t, --timeout duration    Socket/request timeout (default 3s)
+  -X, --method string       Http request method (default "GET")
+  -H, --header strings      HTTP request header with format "K: V", can be repeated
+                            Examples:
+                                -H "k1: v1" -H k2:v2
+                                -H "k3: v3, k4: v4"
+      --host string         Override request host
+  -a, --disableKeepAlives   Disable HTTP keep-alive, if true, will set header Connection: close
+  -b, --body string         Http request body string
+  -f, --file string         Read http request body from file path
+  -s, --stream              Use stream body to reduce memory usage
+  -J, --json                Send json request by setting the Content-Type header to application/json
+  -F, --form                Send form request by setting the Content-Type header to application/x-www-form-urlencoded
+  -k, --insecure            Controls whether a client verifies the server's certificate chain and host name
+      --cert string         Path to the client's TLS Certificate
+      --key string          Path to the client's TLS Certificate Private Key
+      --httpProxy string    Http proxy address
+      --socksProxy string   Socks proxy address
+  -p, --pipeline            Use fasthttp pipeline client
+      --follow              Follow 30x Location redirects for debug mode
+      --maxRedirects int    Max redirect count of following 30x, default is 30 (work with --follow)
+  -D, --debug               Send request once and show request and response detail
+  -h, --help                help for httpit
   -v, --version             version for httpit
 ```
 
@@ -55,6 +70,41 @@ Use `--httpProxy` and `--socksProxy` to specific proxies for some rare cases.
 
 ### Pipeline
 Use `-p|--pipeline` to specific fasthttp pipeline client.
+
+### Debug
+Use `-D|--debug` to send a request once and view the whole info.
+```bash
+httpit "http://httpbin.org/get" -JD  
+Connected to httpbin.org(54.91.118.50:80)
+
+GET /get HTTP/1.1
+User-Agent: fasthttp
+Host: httpbin.org
+Content-Type: application/json
+
+
+
+HTTP/1.1 200 OK
+Server: gunicorn/19.9.0
+Date: Wed, 17 Mar 2021 04:33:00 GMT
+Content-Type: application/json
+Content-Length: 269
+Connection: keep-alive
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true
+
+{
+  "args": {}, 
+  "headers": {
+    "Content-Type": "application/json", 
+    "Host": "httpbin.org", 
+    "User-Agent": "fasthttp", 
+    "X-Amzn-Trace-Id": "Root=1-6051867c-7effb4170f5e3057666ecb86"
+  }, 
+  "origin": "54.91.118.50", 
+  "url": "http://httpbin.org/get"
+}
+```
 
 ## Examples
 ### Use duration
