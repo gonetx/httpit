@@ -18,7 +18,17 @@
 `httpit` is a rapid http(s) benchmark tool which on top of [fasthttp](https://github.com/valyala/fasthttp). Also thanks to [cobra](https://github.com/spf13/cobra) and [bubbletea](https://github.com/charmbracelet/bubbletea).
 
 ## Installation
-Get binaries from [releases](https://github.com/gonetx/httpit/releases) or just run `go get -u github.com/gonetx/httpit`.
+Get binaries from [releases](https://github.com/gonetx/httpit/releases) or via
+
+```
+// go1.16+
+go install github.com/gonetx/httpit@latest
+```
+
+```
+// before go1.16
+go get -u github.com/gonetx/httpit
+```
 
 ## Usage
 ```bash
