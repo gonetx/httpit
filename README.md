@@ -133,4 +133,7 @@ If you use and love httpit, please consider sending some Satoshi to `3AJ3wgRP1mC
 
 In case you want to be mentioned as a sponsor, please let me know!
 
-![Donate Bitcoin](capture/btc.jpg)
+![Donate Bitcoin](imgs/btc.jpg)
+
+## Support
+[![Jet Brains](imgs/jetbrains.svg)](https://www.jetbrains.com/?from=httpit)
