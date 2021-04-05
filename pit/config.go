@@ -14,31 +14,57 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// Config holds httpit settings
 type Config struct {
-	Connections       int
-	Count             int
-	Duration          time.Duration
-	Timeout           time.Duration
-	Url               string
-	Method            string
-	Args              []string
-	Headers           []string
-	Host              string
+	// Connections indicates how many tcp connections are used concurrently
+	Connections int
+	// Count is numbers of request in one benchmark round
+	Count int
+	// Duration means benchmark duration, it's ignored if Count is specified
+	Duration time.Duration
+	// Timeout indicates socket/request timeout
+	Timeout time.Duration
+	// Url is the benchmark target
+	Url string
+	// Method is the http method
+	Method string
+	// Args can set data handily for form and json request
+	Args []string
+	// Headers indicates http headers
+	Headers []string
+	// Host can override Host header in request
+	Host string
+	// DisableKeepAlives sets Connection header to 'close'
 	DisableKeepAlives bool
-	Body              string
-	File              string
-	Stream            bool
-	JSON              bool
-	Form              bool
-	Insecure          bool
-	Cert              string
-	Key               string
-	HttpProxy         string
-	SocksProxy        string
-	Pipeline          bool
-	Follow            bool
-	MaxRedirects      int
-	Debug             bool
+	// Body is request body
+	Body string
+	// File indicates that read request body from a file
+	File string
+	// Stream indicates using stream body
+	Stream bool
+	// JSON indicates send a JSON request
+	JSON bool
+	// JSON indicates send a Form request
+	Form bool
+	// Insecure skips tls verification
+	Insecure bool
+	// Cert indicates path to the client's TLS Certificate
+	Cert string
+	// Cert indicates path to the client's TLS Certificate private key
+	Key string
+	// HttpProxy indicates an http proxy address
+	HttpProxy string
+	// SocksProxy indicates an socks proxy address
+	SocksProxy string
+	// Pipeline if true, will use fasthttp PipelineClient
+	Pipeline bool
+	// Follow if true, follow 30x location redirects in debug mode
+	Follow bool
+	// MaxRedirects indicates maximum redirect count of following 30x,
+	// default is 30 (only works if Follow is true)
+	MaxRedirects int
+	// Debug if true, only send request once and show request and response detail
+	Debug bool
 
 	throughput int64
 	body       []byte

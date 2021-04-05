@@ -20,6 +20,7 @@ const (
 	defaultMaxRedirects = 30
 )
 
+// Pit denotes httpit application
 type Pit struct {
 	c *Config
 	client
@@ -33,6 +34,7 @@ type Pit struct {
 	*tui
 }
 
+// New create a Pit instance with specific Config
 func New(c Config) *Pit {
 	p := &Pit{
 		c:        &c,
@@ -65,6 +67,7 @@ func New(c Config) *Pit {
 	return p
 }
 
+// Run starts benchmarking
 func (p *Pit) Run() (err error) {
 	if err = p.init(); err != nil {
 		return
