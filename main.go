@@ -10,8 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const version = "0.2.0"
-
 func main() {
 	if err := rootCmd.Execute(); err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err)
@@ -50,7 +48,7 @@ var rootCmd = &cobra.Command{
 	Use:           usage,
 	Example:       example,
 	Short:         "httpit is a rapid http benchmark tool",
-	Version:       version,
+	Version:       pit.Version,
 	Args:          rootArgs,
 	Run:           rootRun,
 	SilenceErrors: true,

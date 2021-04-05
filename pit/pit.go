@@ -10,6 +10,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// Version of current httpit
+const Version = "0.2.1"
+
 const (
 	defaultConnections  = 128
 	defaultDuration     = time.Second * 10

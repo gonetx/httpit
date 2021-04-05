@@ -50,6 +50,7 @@ type Config struct {
 func (c *Config) doer() clientDoer {
 	if c.Pipeline {
 		return &fasthttp.PipelineClient{
+			Name:        "httpit/" + Version,
 			Addr:        c.addr,
 			Dial:        c.getDialer(),
 			IsTLS:       c.isTLS,
@@ -64,6 +65,7 @@ func (c *Config) doer() clientDoer {
 
 func (c *Config) hostClient() *fasthttp.HostClient {
 	return &fasthttp.HostClient{
+		Name:        "httpit/" + Version,
 		Addr:        c.addr,
 		Dial:        c.getDialer(),
 		IsTLS:       c.isTLS,
