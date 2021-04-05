@@ -111,10 +111,6 @@ func Test_Config_setReqBody(t *testing.T) {
 func Test_Config_setReqHeader(t *testing.T) {
 	t.Parallel()
 
-	t.Run("append args header", func(t *testing.T) {
-		t.Skip("for now")
-	})
-
 	t.Run("append flag header", func(t *testing.T) {
 		t.Run("error", func(t *testing.T) {
 			c, req := configAndReq()

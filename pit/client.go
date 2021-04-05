@@ -69,6 +69,7 @@ func newFasthttpClient(c *Config) (fc *fasthttpClient, err error) {
 	}
 
 	if c.Debug {
+		fc.rawReq.SetConnectionClose()
 		fc.onceDoer = c.hostClient()
 	} else {
 		fc.doer = c.doer()

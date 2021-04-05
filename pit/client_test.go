@@ -53,6 +53,7 @@ func Test_Fastclient_New(t *testing.T) {
 			Debug: true,
 		})
 		assert.Nil(t, err)
+		assert.True(t, fc.rawReq.ConnectionClose())
 		assert.NotNil(t, fc.onceDoer)
 	})
 }
