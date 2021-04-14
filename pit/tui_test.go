@@ -7,7 +7,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-
+	lg "github.com/charmbracelet/lipgloss"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -77,27 +77,27 @@ func Test_tui_writeErrors(t *testing.T) {
 	tt := newTui()
 	tt.errs["custom-error"] = 1
 	tt.writeErrors()
-	assert.Contains(t, tt.buf.String(), "custom-error")
+	assert.Contains(t, tt.buf.String(), lg.NewStyle().Underline(true).Render("custom-error"))
 	assert.Contains(t, tt.buf.String(), "1")
 }
 
-//func Test_tui_writeHint(t *testing.T) {
-//	t.Parallel()
-//
-//	t.Run("done", func(t *testing.T) {
-//		tt := newTui()
-//		tt.done = true
-//		tt.writeHint()
-//		assert.Contains(t, tt.buf.String(), "Done")
-//	})
-//
-//	t.Run("terminate", func(t *testing.T) {
-//		tt := newTui()
-//		tt.quitting = true
-//		tt.writeHint()
-//		assert.Contains(t, tt.buf.String(), "Terminated")
-//	})
-//}
+func Test_tui_writeHint(t *testing.T) {
+	t.Parallel()
+
+	t.Run("done", func(t *testing.T) {
+		tt := newTui()
+		tt.done = true
+		tt.writeHint()
+		assert.Contains(t, tt.buf.String(), "Done")
+	})
+
+	t.Run("terminate", func(t *testing.T) {
+		tt := newTui()
+		tt.quitting = true
+		tt.writeHint()
+		assert.Contains(t, tt.buf.String(), "Terminated")
+	})
+}
 
 func Test_tui_writeInt(t *testing.T) {
 	t.Parallel()
