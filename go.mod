@@ -3,10 +3,9 @@ module github.com/gonetx/httpit
 go 1.15
 
 require (
-	github.com/charmbracelet/bubbles v0.7.6
+	github.com/charmbracelet/bubbles v0.7.7
 	github.com/charmbracelet/bubbletea v0.13.2
 	github.com/klauspost/compress v1.11.13 // indirect
-	github.com/mattn/go-runewidth v0.0.12 // indirect
 	github.com/muesli/reflow v0.2.1-0.20210115123740-9e1d0d53df68
 	github.com/muesli/termenv v0.8.1
 	github.com/spf13/cobra v1.1.3
