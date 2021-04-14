@@ -10,19 +10,15 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbles/progress"
-
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/muesli/reflow/margin"
-	"github.com/muesli/termenv"
+	lg "github.com/charmbracelet/lipgloss"
 	"github.com/valyala/bytebufferpool"
 	"github.com/valyala/fasthttp"
 )
 
-var color = termenv.ColorProfile().Color
-
 const (
 	done         = 1
-	fieldWidth   = 20
+	fieldWidth   = 18
 	defaultFps   = time.Duration(40)
 	padding      = 2
 	maxWidth     = 66
@@ -228,20 +224,23 @@ func (t *tui) writeThroughput() {
 }
 
 func (t *tui) writeStatistics() {
-	_, _ = t.buf.Write([]byte("Statistics"))
-	_, _ = t.buf.Write(margin.Bytes([]byte("Avg"), fieldWidth, 8))
-	_, _ = t.buf.Write(margin.Bytes([]byte("Stdev"), fieldWidth, 7))
-	_, _ = t.buf.Write(margin.Bytes([]byte("Max\n"), fieldWidth, 8))
+	_, _ = t.buf.WriteString(lg.NewStyle().Width(12).Align(lg.Center).Render("Statistics  "))
+
+	_, _ = t.buf.WriteString(lg.NewStyle().Width(fieldWidth).Align(lg.Center).Render("Avg"))
+	_, _ = t.buf.WriteString(lg.NewStyle().Width(fieldWidth).Align(lg.Center).Render("Stdev"))
+	_, _ = t.buf.WriteString(lg.NewStyle().Width(fieldWidth).Align(lg.Center).Render("Max"))
+	_ = t.buf.WriteByte('\n')
 
 	rpsAvg, rpsStdev, rpsMax := rpsResult(t.rps)
-	_, _ = t.buf.Write([]byte("  Reqs/sec"))
+	_, _ = t.buf.WriteString(lg.NewStyle().Width(12).Align(lg.Center).Render("Reqs/sec  "))
+
 	t.writeRps(rpsAvg)
 	t.writeRps(rpsStdev)
 	t.writeRps(rpsMax)
 	_ = t.buf.WriteByte('\n')
 
 	latencyAvg, latencyStdev, latencyMax := latencyResult(t.latencies)
-	_, _ = t.buf.Write([]byte("  Latency "))
+	_, _ = t.buf.WriteString(lg.NewStyle().Width(12).Align(lg.Center).Render("Latency  "))
 	t.writeLatency(latencyAvg)
 	t.writeLatency(latencyStdev)
 	t.writeLatency(latencyMax)
@@ -249,14 +248,13 @@ func (t *tui) writeStatistics() {
 }
 
 func (t *tui) writeRps(rps float64) {
-	b := strconv.AppendFloat(nil, rps, 'f', 2, 64)
-	_, _ = t.buf.Write(margin.Bytes(b, fieldWidth, (fieldWidth-uint(len(b)))/2))
+	s := strconv.FormatFloat(rps, 'f', 2, 64)
+	_, _ = t.buf.WriteString(lg.NewStyle().Width(fieldWidth).Align(lg.Center).Render(s))
 }
 
 func (t *tui) writeLatency(latency float64) {
-	b := strconv.AppendFloat(nil, latency, 'f', 2, 64)
-	b = append(b, 'm', 's')
-	_, _ = t.buf.Write(margin.Bytes(b, fieldWidth, (fieldWidth-uint(len(b)))/2))
+	s := strconv.FormatFloat(latency, 'f', 2, 64)
+	_, _ = t.buf.WriteString(lg.NewStyle().Width(fieldWidth).Align(lg.Center).Render(s + "ms"))
 }
 
 func (t *tui) writeCodes() {
@@ -297,7 +295,7 @@ func (t *tui) writeErrors() {
 	_, _ = t.buf.WriteString("Errors:\n")
 	for err, count := range t.errs {
 		_, _ = t.buf.WriteString("  ")
-		_, _ = t.buf.WriteString(termenv.String(err).Underline().String())
+		_, _ = t.buf.WriteString(lg.NewStyle().Underline(true).Render(err))
 		_, _ = t.buf.WriteString(": ")
 		t.writeInt(count)
 		_ = t.buf.WriteByte('\n')
@@ -306,11 +304,11 @@ func (t *tui) writeErrors() {
 
 func (t *tui) writeHint() {
 	if t.done {
-		_, _ = t.buf.WriteString(termenv.String(" Done! \n").Background(color("#008700")).String())
+		_, _ = t.buf.WriteString(lg.NewStyle().Background(lg.Color("#008700")).Render(" Done! \n"))
 	} else if t.quitting {
-		_, _ = t.buf.WriteString(termenv.String(" Terminated! \n").Background(color("#870000")).String())
+		_, _ = t.buf.WriteString(lg.NewStyle().Background(lg.Color("#870000")).Render(" Terminated! \n"))
 	} else {
-		_, _ = t.buf.WriteString(termenv.String(" press q/esc/ctrl+c to quit \n").Background(color("#444")).String())
+		_, _ = t.buf.WriteString(lg.NewStyle().Background(lg.Color("#444")).Render(" press q/esc/ctrl+c to quit "))
 	}
 }
 
@@ -320,7 +318,7 @@ func (t *tui) writeInt(i int, colorStr ...string) {
 		return
 	}
 
-	_, _ = t.buf.WriteString(termenv.String(strconv.Itoa(i)).Foreground(color(colorStr[0])).String())
+	_, _ = t.buf.WriteString(lg.NewStyle().Foreground(lg.Color(colorStr[0])).Render(strconv.Itoa(i)))
 }
 
 func (t *tui) writeFloat(f float64) {
