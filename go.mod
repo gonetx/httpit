@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/charmbracelet/bubbles v0.7.7
 	github.com/charmbracelet/bubbletea v0.13.2
-	github.com/charmbracelet/lipgloss v0.1.2
+	github.com/charmbracelet/lipgloss v0.1.3
 	github.com/klauspost/compress v1.11.13 // indirect
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.7.0
