@@ -20,6 +20,9 @@ type Config struct {
 	Connections int
 	// Count is numbers of request in one benchmark round
 	Count int
+	// Qps specifies the highest value for a fixed benchmark, but the real qps
+	// may lower than it
+	Qps int
 	// Duration means benchmark duration, it's ignored if Count is specified
 	Duration time.Duration
 	// Timeout indicates socket/request timeout

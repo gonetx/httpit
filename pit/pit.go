@@ -24,6 +24,7 @@ const (
 type Pit struct {
 	c *Config
 	client
+	limiter
 	wg sync.WaitGroup
 
 	mut       sync.Mutex
@@ -38,6 +39,7 @@ type Pit struct {
 func New(c Config) *Pit {
 	p := &Pit{
 		c:        &c,
+		limiter:  nopeLimiter(false),
 		doneChan: make(chan struct{}),
 	}
 
@@ -90,6 +92,10 @@ func (p *Pit) init() (err error) {
 	p.c.Url = addMissingSchemaAndHost(p.c.Url)
 	p.tui.url = p.c.Url
 
+	if p.c.Qps > 0 {
+		p.limiter = newTokenLimiter(p.c.Qps)
+	}
+
 	if p.client == nil {
 		p.client, err = newFasthttpClient(p.c)
 	}
@@ -135,7 +141,9 @@ func (p *Pit) worker() {
 			p.wg.Done()
 			return
 		default:
-			p.statistic(p.do())
+			if p.limiter.allow() {
+				p.statistic(p.do())
+			}
 		}
 	}
 }
@@ -178,6 +186,7 @@ func (p *Pit) statistic(code int, latency time.Duration, err error) {
 		p.roundReqs = 0
 	}
 
+	// exceed duration
 	if p.c.Count <= 0 && atomic.LoadInt64(&p.elapsed) >= int64(p.c.Duration) {
 		p.done = true
 		// notify workers to stop

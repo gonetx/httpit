@@ -21,7 +21,8 @@ var config pit.Config
 func init() {
 	rootCmd.Flags().SortFlags = false
 	rootCmd.Flags().IntVarP(&config.Connections, "connections", "c", 128, "Maximum number of concurrent connections")
-	rootCmd.Flags().IntVarP(&config.Count, "requests", "n", 0, "Number of requests(if specified, then ignore the --duration)")
+	rootCmd.Flags().IntVarP(&config.Count, "requests", "n", 0, "Number of requests (if specified, then ignore the --duration)")
+	rootCmd.Flags().IntVar(&config.Qps, "qps", 0, "Highest qps value for a fixed benchmark (if specified, then ignore the -n|--requests)")
 	rootCmd.Flags().DurationVarP(&config.Duration, "duration", "d", time.Second*10, "Duration of test")
 	rootCmd.Flags().DurationVarP(&config.Timeout, "timeout", "t", time.Second*3, "Socket/request timeout")
 	rootCmd.Flags().StringVarP(&config.Method, "method", "X", "GET", "Http request method")

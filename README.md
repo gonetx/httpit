@@ -45,6 +45,7 @@ Examples:
 Flags:
   -c, --connections int     Maximum number of concurrent connections (default 128)
   -n, --requests int        Number of requests(if specified, then ignore the --duration)
+      --qps int             Highest qps value for a fixed benchmark (if specified, then ignore the -n|--requests)
   -d, --duration duration   Duration of test (default 10s)
   -t, --timeout duration    Socket/request timeout (default 3s)
   -X, --method string       Http request method (default "GET")
