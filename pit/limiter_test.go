@@ -26,7 +26,7 @@ func Test_nopeLimiter_allow(t *testing.T) {
 func Test_tokenLimiter_allow(t *testing.T) {
 	t.Parallel()
 
-	qps, oneTokenDuration := 100, time.Second/100
+	qps, oneTokenDuration := 10, time.Second/10
 	lim := newTokenLimiter(qps)
 	lim.token = 0
 
