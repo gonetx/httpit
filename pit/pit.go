@@ -11,7 +11,7 @@ import (
 )
 
 // Version of current httpit
-const Version = "0.3.2"
+const Version = "0.4.0"
 
 const (
 	defaultConnections  = 128
