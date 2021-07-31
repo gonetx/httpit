@@ -263,7 +263,7 @@ func (c *Config) getDialer() fasthttp.DialFunc {
 		return fasthttpHttpProxyDialer(&c.throughput, c.HttpProxy, c.Timeout)
 	}
 	if c.SocksProxy != "" {
-		return fasthttpSocksProxyDialer(&c.throughput, c.HttpProxy)
+		return fasthttpSocksProxyDialer(&c.throughput, c.SocksProxy)
 	}
 
 	return fasthttpDialer(&c.throughput, c.Timeout)
