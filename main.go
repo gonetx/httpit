@@ -43,6 +43,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&config.Follow, "follow", false, "Follow 30x Location redirects for debug mode")
 	rootCmd.Flags().IntVar(&config.MaxRedirects, "maxRedirects", 0, "Max redirect count of following 30x, default is 30 (work with --follow)")
 	rootCmd.Flags().BoolVarP(&config.Debug, "debug", "D", false, "Send request once and show request and response detail")
+	rootCmd.Flags().BoolVar(&config.Http2, "http2", false, "Use HTTP/2.0")
 }
 
 var rootCmd = &cobra.Command{
