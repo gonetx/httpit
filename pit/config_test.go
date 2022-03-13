@@ -201,3 +201,14 @@ func Test_addMissingPort(t *testing.T) {
 		assert.Equal(t, addr+":443", addMissingPort(addr, true))
 	})
 }
+
+func Test_Config_hostClient(t *testing.T) {
+	c := &Config{
+		Http2: true,
+		addr:  "127.0.0.1:8443",
+	}
+
+	hc, err := c.hostClient()
+	assert.Nil(t, hc)
+	assert.EqualError(t, err, "127.0.0.1:8443 doesn't support http/2\n")
+}

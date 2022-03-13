@@ -5,12 +5,14 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/dgrr/http2"
 	"github.com/valyala/fasthttp"
 )
 
@@ -68,6 +70,8 @@ type Config struct {
 	MaxRedirects int
 	// Debug if true, only send request once and show request and response detail
 	Debug bool
+	// Http2 if true, will use http2 for fasthttp
+	Http2 bool
 
 	throughput int64
 	body       []byte
@@ -76,7 +80,7 @@ type Config struct {
 	tlsConf    *tls.Config
 }
 
-func (c *Config) doer() clientDoer {
+func (c *Config) doer() (clientDoer, error) {
 	if c.Pipeline {
 		return &fasthttp.PipelineClient{
 			Name:        "httpit/" + Version,
@@ -87,13 +91,13 @@ func (c *Config) doer() clientDoer {
 			MaxConns:    c.Connections,
 			ReadTimeout: c.Timeout,
 			Logger:      discardLogger{},
-		}
+		}, nil
 	}
 	return c.hostClient()
 }
 
-func (c *Config) hostClient() *fasthttp.HostClient {
-	return &fasthttp.HostClient{
+func (c *Config) hostClient() (*fasthttp.HostClient, error) {
+	hc := &fasthttp.HostClient{
 		Name:        "httpit/" + Version,
 		Addr:        c.addr,
 		Dial:        c.getDialer(),
@@ -102,6 +106,15 @@ func (c *Config) hostClient() *fasthttp.HostClient {
 		MaxConns:    c.Connections,
 		ReadTimeout: c.Timeout,
 	}
+
+	if c.Http2 {
+		log.Println("setup http2")
+		if err := http2.ConfigureClient(hc, http2.ClientOpts{}); err != nil {
+			return nil, fmt.Errorf("%s doesn't support http/2\n", hc.Addr)
+		}
+	}
+
+	return hc, nil
 }
 
 func (c *Config) setReqBasic(req *fasthttp.Request) (err error) {
